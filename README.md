@@ -1,2 +1,2 @@
 # R2D2_CAI
-CAI: Counter AIAccessible from the Soccer_Open Project
+CAI: Counter AI, Accessible from the Soccer_Open Project
