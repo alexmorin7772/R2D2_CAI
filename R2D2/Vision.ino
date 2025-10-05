@@ -2,10 +2,16 @@
 #include "SoftwareSerial.h"
 #include "protothreads.h"
 
-HUSKYLENS huskylens;
+HUSKYLENS huskylens; 
+
 SoftwareSerial mySerial(2, 3); // RX, TX
-//HUSKYLENS green line >> Pin 2; blue line >> Pin 3
+//HUSKYLENS green line = TX >> Pin 2 = RX; blue line = RX >> Pin 3 = TX
 void printResult(HUSKYLENSResult result);
+
+void huskyAlgorithm(void);
+void huskyAlgorithm() {
+  huskylens.writeAlgorithm(ALGORITHM_LINE_TRACKING);
+}
 
 int huskyRead(struct pt* husky) {
   PT_BEGIN(husky);

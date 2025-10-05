@@ -13,6 +13,11 @@ void setup() {
   PT_INIT(&ptEyelid);
   PT_INIT(&ptHuskylens);
   myservo.attach(9);  // attaches the servo on pin 9 to the Servo object
+  // huskyAlgorithm();   // Huskylens - Vision.ino
+  // motorSetup();       // Motor Driver - 
+  // groveDLSsetup();    // Light Sensor - 
+  // touchSetup();       // Touch Sensor - 
+  // eyelidSetup();      // Servo / Iris - Eyelid.ino
 }
 
 void loop() {
