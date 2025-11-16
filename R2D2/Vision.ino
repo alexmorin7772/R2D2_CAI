@@ -14,6 +14,16 @@ void huskyAlgorithm() {
 }
 
 int huskyRead(struct pt* husky) {
+  mySerial.begin(9600);
+
+  while (!huskylens.begin(mySerial))
+  {
+      Serial.println(F("Begin failed!"));
+      Serial.println(F("1.Please recheck the \"Protocol Type\" in HUSKYLENS (General Settings>>Protocol Type>>Serial 9600)"));
+      Serial.println(F("2.Please recheck the connection."));
+      delay(100);
+  }
+
   PT_BEGIN(husky);
   for(;;) {
     if (!huskylens.request()) Serial.println(F("Fail to request data from HUSKYLENS, recheck the connection!"));
