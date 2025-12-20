@@ -1,8 +1,8 @@
-#include "HUSKYLENS.h"
+/*#include "HUSKYLENS.h"
 #include "SoftwareSerial.h"
 #include "protothreads.h"
 
-HUSKYLENS huskylens; 
+HUSKYLENS huskylens;
 
 SoftwareSerial mySerial(2, 3); // RX, TX
 //HUSKYLENS green line = TX >> Pin 2 = RX; blue line = RX >> Pin 3 = TX
@@ -51,4 +51,4 @@ void printResult(HUSKYLENSResult result){
     else{
         Serial.println("Object unknown!");
     }
-}
+}*/
