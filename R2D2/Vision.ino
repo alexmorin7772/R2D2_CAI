@@ -4,7 +4,7 @@
 
 HUSKYLENS huskylens;
 
-SoftwareSerial mySerial(2, 3); // RX, TX
+SoftwareSerial mySerial(3, 4); // RX, TX
 //HUSKYLENS green line = TX >> Pin 2 = RX; blue line = RX >> Pin 3 = TX
 void printResult(HUSKYLENSResult result);
 
