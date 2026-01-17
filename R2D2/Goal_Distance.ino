@@ -1,4 +1,4 @@
-int goal_distance(struct pt* pt) {
+/*int goal_distance(struct pt* pt) {
   PT_BEGIN(pt);
   for (;;) {
     huskylens.writeAlgorithm(ALGORITHM_COLOR_RECOGNITION);
@@ -35,7 +35,7 @@ int goal_distance(struct pt* pt) {
     }
     PT_SLEEP(pt, 1000);
     goal_success = true;
-    //Recalculate after 100 ms
+    //Recalculate after 1 second
   }
   PT_END(pt);
-}
+}*/

@@ -1,4 +1,4 @@
-int ball_distance(struct pt* pt) {
+/*int ball_distance(struct pt* pt) {
   PT_BEGIN(pt);
   for (;;) {
     huskylens.writeAlgorithm(ALGORITHM_OBJECT_TRACKING);
@@ -35,7 +35,7 @@ int ball_distance(struct pt* pt) {
     }
     ball_success = true;
     PT_SLEEP(pt, 1000);
-    //Recalculate after 100 ms
+    //Recalculate after 1 second
   }
   PT_END(pt);
-}
+}*/
