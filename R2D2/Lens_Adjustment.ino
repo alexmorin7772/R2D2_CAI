@@ -14,7 +14,6 @@ int lens_adjustment(struct pt* pt, int goal_lux) {
       lens_state = move_servo;
     } else if (lens_state == move_servo) {
       myservo.write(angle);
-      PT_SLEEP(pt, 15);
       lens_state = lens_finish;
     } else if (lens_state == lens_finish) {
       lens_state = lens_start;

@@ -1,7 +1,7 @@
 object_recognition_state goal_state = start;
 unsigned long goal_start_millis;
 
-int goal_distance(struct pt* pt, unsigned long max_milliseconds) {
+int goal_distance(struct pt* pt) {
   PT_BEGIN(pt);
   for (;;) {
     //Serial.print("Goal state: ");
@@ -32,14 +32,18 @@ int goal_distance(struct pt* pt, unsigned long max_milliseconds) {
       else {
         goal_height = static_cast<float>(result.height);
         goal_current_distance = (goal_size_30 * 30) / goal_height;
+        goal_location = {result.xCenter, result.yCenter};
         Serial.print("Goal distance: ");
         Serial.println(goal_current_distance);
+        Serial.print("Location: (");
+        Serial.print(goal_location.x);
+        Serial.print(", ");
+        Serial.print(goal_location.y);
+        Serial.println(")");
         goal_state = finish; //successfully found the distance, so go to finish
       }
     } else if (goal_state == finish) {
       goal_state = start;
-      //Serial.print("Finished goal state: ");
-      //Serial.println(goal_state);
       PT_SLEEP(pt, 1000);
       //recalculate after 1 second
     } else {

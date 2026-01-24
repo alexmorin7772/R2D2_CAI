@@ -1,4 +1,4 @@
-int eyelidThread(struct pt* pt) {
+/*int eyelidThread(struct pt* pt) {
   PT_BEGIN(pt);
   for(;;) {
     for (pos = 0; pos <= 180; pos += 1) { // goes from 0 degrees to 180 degrees
@@ -12,4 +12,4 @@ int eyelidThread(struct pt* pt) {
     }
   }
   PT_END(pt);
-}
+}*/

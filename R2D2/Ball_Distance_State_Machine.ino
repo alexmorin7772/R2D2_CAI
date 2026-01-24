@@ -1,7 +1,7 @@
 object_recognition_state ball_state = start;
 unsigned long ball_start_millis;
 
-int ball_distance(struct pt* pt, unsigned long max_milliseconds) {
+int ball_distance(struct pt* pt) {
   PT_BEGIN(pt);
   for (;;) {
     //Serial.print("Ball state: ");
@@ -32,14 +32,18 @@ int ball_distance(struct pt* pt, unsigned long max_milliseconds) {
       else {
         ball_current_size = (static_cast<float>(result.width) + static_cast<float>(result.height)) / 2.0;
         ball_current_distance = (ball_size_10 * 10) / ball_current_size;
+        ball_location = {result.xCenter, result.yCenter};
         Serial.print("Ball distance: ");
         Serial.println(ball_current_distance);
+        Serial.print("Location: (");
+        Serial.print(ball_location.x);
+        Serial.print(", ");
+        Serial.print(ball_location.y);
+        Serial.println(")");
         ball_state = finish; //successfully found the distance, so go to finish
       }
     } else if (ball_state == finish) {
       ball_state = start;
-      //Serial.print("Finished ball state: ");
-      //Serial.println(ball_state);
       PT_SLEEP(pt, 1000);
       //recalculate after 1 second
     } else {

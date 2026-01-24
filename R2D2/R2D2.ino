@@ -16,17 +16,32 @@ pt pt_lens_adjustment;
 HUSKYLENS huskylens;
 SoftwareSerial serial(10, 11);
 
+struct location {
+  int x, y;
+};
+
 //ball distance variables
 float ball_size_10 = 120.0;
 float ball_current_distance;
 float ball_current_size;
 bool ball_success;
+location ball_location;
 
 //goal distance variables
 float goal_size_30 = 100.0;
 float goal_current_distance;
 float goal_height;
 bool goal_success;
+location goal_location;
+
+/*
+Coordinate system
+(0, 0)                 (320, 0)
+
+           (160, 120)
+
+(0, 240)               (320, 240)
+*/
 
 //object recognition state machine
 typedef enum object_recognition_state {
@@ -76,10 +91,7 @@ void setup() {
   PT_INIT(&pt_goal_distance);
   PT_INIT(&pt_lens_adjustment);
   myservo.attach(9);  // attaches the servo on pin 9 to the Servo object
-  while (!huskylens.begin(serial)) {
-    Serial.println("Begin failed!");
-    delay(100);
-  }
+  while (!huskylens.begin(serial)) Serial.println("Begin failed!");
   // huskyAlgorithm();   // Huskylens - Vision.ino
   // motorSetup();       // Motor Driver - 
   // groveDLSsetup();    // Light Sensor - 
@@ -90,7 +102,7 @@ void setup() {
 void loop() {
   //PT_SCHEDULE(eyelidThread(&ptEyelid));
   //PT_SCHEDULE(huskyRead(&ptHuskylens));
-  PT_SCHEDULE(ball_distance(&pt_ball_distance, max_milliseconds));
-  PT_SCHEDULE(goal_distance(&pt_goal_distance, max_milliseconds));
+  PT_SCHEDULE(ball_distance(&pt_ball_distance));
+  PT_SCHEDULE(goal_distance(&pt_goal_distance));
   PT_SCHEDULE(lens_adjustment(&pt_lens_adjustment, goal_lux));
 }
