@@ -34,6 +34,8 @@ float goal_height;
 bool goal_success;
 location goal_location;
 
+const double BALL_DIAMETER = 4.27;
+//ball diameter in cm
 /*
 Coordinate system
 (0, 0)                 (320, 0)
