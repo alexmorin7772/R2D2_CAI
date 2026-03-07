@@ -82,6 +82,21 @@ int lux = 9999;
 int goal_lux = 500;
 int angle = 0;
 
+const int OUT1 = -1;
+const int OUT2 = -1;
+//the OUT1 and OUT2 pins go to analog pins and we read them to figure out whether to start or stop
+//remember to change the OUT1 and OUT2 pins when we decide on it
+
+bool started = false;
+//boolean for the start/stop signal
+
+const float ANALOG_RANGE = 3.3;
+const float ANALOG_MAX = 1023.0;
+//range of analog voltages and the maximum possible analog reading
+const float ON = 3.3;
+const float OFF = 0.0;
+//voltage for on and off signals
+
 void setup() {
   Serial.begin(115200);
   serial.begin(9600);
