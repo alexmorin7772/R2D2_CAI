@@ -5,6 +5,33 @@
 #include <Digital_Light_TSL2561.h>
 #include <Servo.h>
 
+/*
+The following are all defined constants
+#define HIGH 0x1
+#define LOW  0x0
+
+#define INPUT 0x0
+#define OUTPUT 0x1
+#define INPUT_PULLUP 0x2
+
+#define PI 3.1415926535897932384626433832795
+#define HALF_PI 1.5707963267948966192313216916398
+#define TWO_PI 6.283185307179586476925286766559
+#define DEG_TO_RAD 0.017453292519943295769236907684886
+#define RAD_TO_DEG 57.295779513082320876798154814105
+#define EULER 2.718281828459045235360287471352
+
+#define SERIAL  0x0
+#define DISPLAY 0x1
+
+#define LSBFIRST 0
+#define MSBFIRST 1
+
+#define CHANGE 1
+#define FALLING 2
+#define RISING 3
+*/
+
 //Create all protothread structs
 pt ptEyelid;
 pt ptHuskylens;
@@ -130,7 +157,7 @@ void setup() {
 void loop() {
   //PT_SCHEDULE(eyelidThread(&ptEyelid));
   //PT_SCHEDULE(huskyRead(&ptHuskylens));
-  PT_SCHEDULE(ball_distance(&pt_ball_distance));
-  PT_SCHEDULE(goal_distance(&pt_goal_distance));
+  //PT_SCHEDULE(ball_distance(&pt_ball_distance));
+  //PT_SCHEDULE(goal_distance(&pt_goal_distance));
   PT_SCHEDULE(lens_adjustment(&pt_lens_adjustment, goal_lux));
 }
