@@ -55,6 +55,13 @@ typedef enum object_recognition_state {
   finish
 };
 
+typedef struct object_recognition_results {
+  bool is_most_recent = false;
+  float object_distance;
+  float object_size;
+  location object_location;
+};
+
 //Initialize functions
 int ball_distance(struct pt* pt);
 int eyelidThread(struct pt* pt);
@@ -79,6 +86,7 @@ typedef enum lens_adjustment_state {
 };
 
 int lux = 9999;
+int actual_lux = 9999;
 int goal_lux = 500;
 int angle = 0;
 

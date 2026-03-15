@@ -1,4 +1,5 @@
 object_recognition_state goal_state = start;
+object_recognition_results goal_results;
 unsigned long goal_start_millis;
 
 int goal_distance(struct pt* pt) {
@@ -33,6 +34,10 @@ int goal_distance(struct pt* pt) {
         goal_height = static_cast<float>(result.height);
         goal_current_distance = (goal_size_30 * 30) / goal_height;
         goal_location = {result.xCenter, result.yCenter};
+        goal_results.object_distance = goal_current_distance;
+        goal_results.object_size = goal_height;
+        goal_results.object_location = goal_location;
+        goal_results.is_most_recent = true;
         Serial.print("Goal distance: ");
         Serial.println(goal_current_distance);
         Serial.print("Location: (");

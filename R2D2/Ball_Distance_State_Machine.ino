@@ -1,4 +1,5 @@
 object_recognition_state ball_state = start;
+object_recognition_results ball_results;
 unsigned long ball_start_millis;
 
 int ball_distance(struct pt* pt) {
@@ -33,6 +34,10 @@ int ball_distance(struct pt* pt) {
         ball_current_size = (static_cast<float>(result.width) + static_cast<float>(result.height)) / 2.0;
         ball_current_distance = (ball_size_10 * 10) / ball_current_size;
         ball_location = {result.xCenter, result.yCenter};
+        ball_results.object_distance = ball_current_distance;
+        ball_results.object_size = ball_current_size;
+        ball_results.object_location = ball_location;
+        ball_results.is_most_recent = true;
         Serial.print("Ball distance: ");
         Serial.println(ball_current_distance);
         Serial.print("Location: (");
