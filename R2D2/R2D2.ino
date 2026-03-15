@@ -55,11 +55,14 @@ typedef enum object_recognition_state {
   finish
 };
 
+//do NOT write to any of these variables except for is_most_recent
 typedef struct object_recognition_results {
-  bool is_most_recent = false;
+  bool is_most_recent = false; //this will be changed to true once the Huskylens writes to it
+  //once someone reads it, it should be set to false so the same information isn't used again
   float object_distance;
   float object_size;
   location object_location;
+  //stores the x and y coordinates of the ball (do object_location.x or object_location.y to get the x and y values)
 };
 
 //Initialize functions
