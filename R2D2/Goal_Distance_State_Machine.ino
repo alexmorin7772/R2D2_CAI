@@ -53,7 +53,7 @@ int goal_distance(struct pt* pt) {
       //recalculate after 1 second
     } else {
       //goal_state doesn't match anything
-      goal_state == initialization;
+      goal_state = initialization;
     }
   }
   PT_END(pt);
