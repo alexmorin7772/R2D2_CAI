@@ -53,7 +53,7 @@ int ball_distance(struct pt* pt) {
       //recalculate after 1 second
     } else {
       //ball_state doesn't match anything
-      ball_state == initialization;
+      ball_state = initialization;
     }
   }
   PT_END(pt);

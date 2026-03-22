@@ -117,7 +117,7 @@ typedef enum lens_adjustment_state {
 
 int lux = 9999;
 int actual_lux = 9999;
-int goal_lux = 500;
+int goal_lux = 100;
 int angle = 0;
 
 const int OUT1 = -1;
