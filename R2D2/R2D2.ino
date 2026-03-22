@@ -167,12 +167,12 @@ motorSetup();
 PT_INIT(&pt_strategy);
 PT_SCHEDULE(soccer_strategy(&pt_strategy));
 
-//const int MOTOR_LEFT_FWD  = 3;
-//const int MOTOR_LEFT_BWD  = 4;
-//const int MOTOR_RIGHT_FWD = 5;
-//const int MOTOR_RIGHT_BWD = 6;
-//const int MOTOR_LEFT_SPEED  = 2;
-//const int MOTOR_RIGHT_SPEED = 7;
+//const int MOTOR_LEFT_FWD  = 3;          Change the pin if necessary
+//const int MOTOR_LEFT_BWD  = 4;          Change the pin if necessary
+//const int MOTOR_RIGHT_FWD = 5;          Change the pin if necessary
+//const int MOTOR_RIGHT_BWD = 6;          Change the pin if necessary
+//const int MOTOR_LEFT_SPEED  = 2;          Change the pin if necessary
+//const int MOTOR_RIGHT_SPEED = 7;          Change the pin if necessary
 
 const int SPEED_FULL    = 200;
 const int SPEED_TURN    = 160;
