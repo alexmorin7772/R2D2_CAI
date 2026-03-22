@@ -1,0 +1,16 @@
+#include <iostream>
+#include <cmath>
+
+int main() {
+    double y = -0.99;
+    double x = -0.12;
+    double angle_radians = std::atan2(y, x);
+    double pi = std::acos(-1.0); 
+    double angle_degrees = angle_radians * (180.0 / pi);
+    std::cout << "--- atan2(" << y << ", " << x << ") Calculation ---" << std::endl;
+    std::cout << "Angle in radians: " << angle_radians << std::endl;
+    std::cout << "Angle in degrees: " << angle_degrees << std::endl;
+
+    return 0;
+}
+
