@@ -174,18 +174,18 @@ PT_SCHEDULE(soccer_strategy(&pt_strategy));
 //const int MOTOR_LEFT_SPEED  = 2;
 //const int MOTOR_RIGHT_SPEED = 7;
 
-//const int SPEED_FULL    = 200;
-//const int SPEED_TURN    = 160;
-//const int SPEED_APPROACH = 120;
-//const int SPEED_REVERSE  = 140;
+const int SPEED_FULL    = 200;
+const int SPEED_TURN    = 160;
+const int SPEED_APPROACH = 120;
+const int SPEED_REVERSE  = 140;
 
-//const int FRAME_CENTER_X = 160;
-//const int FRAME_CENTER_Y = 120;
-//const int CENTER_DEADZONE = 30;
+const int FRAME_CENTER_X = 160;
+const int FRAME_CENTER_Y = 120;
+const int CENTER_DEADZONE = 30;
 
-//const float CLOSE_DISTANCE = 15.0;
-//const float CAPTURE_DISTANCE = 8.0;
-//const float GOAL_FAR_DISTANCE = 50.0;
+const float CLOSE_DISTANCE = 15.0;
+const float CAPTURE_DISTANCE = 8.0;
+const float GOAL_FAR_DISTANCE = 50.0;
 
 typedef enum soccer_strategy_state {
   strategy_idle,
