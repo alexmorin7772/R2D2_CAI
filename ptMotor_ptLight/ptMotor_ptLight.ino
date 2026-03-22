@@ -266,10 +266,7 @@ int Motor(struct pt* drive) {
     }
     PT_END(drive)
 }
-/*
-package given by patrick + the brain = (state, value)
-need to write a pt_receive
-*/
+
 void setup() {
    PT_INIT(&ptLight);
    PT_INIT(&ptMotor);
