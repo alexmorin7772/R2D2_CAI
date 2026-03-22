@@ -226,6 +226,7 @@ int Motor(struct pt* drive) {
             }
         } else if (runMode == rPivotRev) {
             pivotrev(motor1, motor2, 400, false);
+            unsigned long waittime = (commandValue*5);
             Serial.println("pivotrev");
             curr = millis();
             if (curr - prev > waittime) {
@@ -234,7 +235,8 @@ int Motor(struct pt* drive) {
                 runMode = rDone;
             }
         } else if(runMode == rTurnLeft) {
-            turnleft(motor1, motor2, 300.0);
+            turnleft(motor1, motor2, 400.0);
+            unsigned long waittime = (commandValue*5);
             Serial.println("turnleft");
             curr = millis();
             if (curr-prev > waittime) {
@@ -243,7 +245,8 @@ int Motor(struct pt* drive) {
                 runMode = rDone;
             }
         } else if(runMode == rTurnRight) {
-            turnright(motor1, motor2, 300.0);
+            turnright(motor1, motor2, 400.0);
+            unsigned long waittime = (commandValue*5);
             Serial.println("turnright");
             curr = millis();
             if (curr-prev > waittime) {
