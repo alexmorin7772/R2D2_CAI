@@ -120,8 +120,8 @@ int actual_lux = 9999;
 int goal_lux = 100;
 int angle = 0;
 
-const int OUT1 = -1;
-const int OUT2 = -1;
+const int OUT1 = A1;
+const int OUT2 = A1;
 //the OUT1 and OUT2 pins go to analog pins and we read them to figure out whether to start or stop
 //remember to change the OUT1 and OUT2 pins when we decide on it
 
@@ -157,7 +157,7 @@ void setup() {
 void loop() {
   //PT_SCHEDULE(eyelidThread(&ptEyelid));
   //PT_SCHEDULE(huskyRead(&ptHuskylens));
-  //PT_SCHEDULE(ball_distance(&pt_ball_distance));
-  //PT_SCHEDULE(goal_distance(&pt_goal_distance));
+  PT_SCHEDULE(ball_distance(&pt_ball_distance));
+  PT_SCHEDULE(goal_distance(&pt_goal_distance));
   PT_SCHEDULE(lens_adjustment(&pt_lens_adjustment, goal_lux));
 }

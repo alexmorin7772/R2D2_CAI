@@ -22,13 +22,13 @@ int lens_adjustment(struct pt* pt, int goal_lux) {
       lux = TSL2561.readVisibleLux();
       Serial.print("Current lux: ");
       Serial.println(lux);
-      actual_lux = lux / (cos((180 - angle) / 2.0 * DEG_TO_RAD) * cos((180 - angle) / 2.0 * DEG_TO_RAD));
+      actual_lux = lux / (cos((180 - angle) / 2.0 * DEG_TO_RAD) * cos((180 - angle) / 2.0 * DEG_TO_RAD) * cos((180 - angle) / 2.0 * DEG_TO_RAD));
       Serial.print("Actual lux: ");
       Serial.println(actual_lux);
       lens_state = calculate_angle;
     } else if (lens_state == calculate_angle) {
       if (goal_lux >= actual_lux) angle = 180;
-      else angle = 180 - 2 * arccos(sqrt(static_cast<float>(goal_lux) / static_cast<float>(actual_lux)));
+      else angle = 180 - 2 * arccos(cbrt(static_cast<float>(goal_lux) / static_cast<float>(actual_lux)));
       Serial.print("Angle: ");
       Serial.println(angle);
       lens_state = move_servo;
