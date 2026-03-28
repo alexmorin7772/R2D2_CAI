@@ -120,8 +120,8 @@ int actual_lux = 9999;
 int goal_lux = 100;
 int angle = 0;
 
-const int OUT1 = A1;
-const int OUT2 = A1;
+const int OUT1 = -1;
+const int OUT2 = -1;
 //the OUT1 and OUT2 pins go to analog pins and we read them to figure out whether to start or stop
 //remember to change the OUT1 and OUT2 pins when we decide on it
 
