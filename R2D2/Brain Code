@@ -8,6 +8,11 @@
 // movement command to send, and calls the motor functions.
 
 
+
+// Brain.ino — Reads sensor data every 2 seconds, decides what
+// movement command to send, and calls the motor functions.
+
+
 // All possible commands the brain can give to the motors
 typedef enum brain_command {
   CMD_STOP,
