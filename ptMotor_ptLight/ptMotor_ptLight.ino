@@ -95,22 +95,7 @@ int BlinkLED(struct pt* led) {
     }
     PT_END(led);
 }
-/*
-pt ptTerminal; //eventually needs to send pacakges both ways
-int Terminal(struct pt* package) { //use lifo struct/stack (last in first out)
-    PT_BEGIN(package);
-    for(;;) {
-        //constant check for the most important/override flag first
-            //then, switch variables -> state = list[0], val = list[1], status = list[3]/override flag, in each motor state constantly chekcing if override
-            //once signal seen delete it from struct
-        //if completed past action/no flag, go through struct (ordered in most recent to least recent + most important)
-            //switch variables
-            //delete signal
-        PT_SLEEP(package, 1) //<- time value not determined yet
-    }
-    PT_END(package)
-}
-*/
+
 struct Command {
     int mode;           
     float value;        
