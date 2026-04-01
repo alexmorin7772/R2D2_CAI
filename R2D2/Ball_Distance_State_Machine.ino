@@ -16,6 +16,7 @@ int ball_distance(struct pt* pt) {
       ball_state = test_for_object;
       //initialize everything and test for ball
     } else if (ball_state == test_for_object) {
+      Serial.println("Ball started!");
       //failure leads to checking the time
       if (!huskylens.request()) ball_state = check_time;
       else if (!huskylens.isLearned()) ball_state = check_time;
@@ -23,7 +24,7 @@ int ball_distance(struct pt* pt) {
       else ball_state = evaluate_distance;
       //otherwise find the distance
     } else if (ball_state == check_time) {
-      if (millis() - ball_start_millis > max_milliseconds) {
+      if (millis() - ball_start_millis > MAX_MILLISECONDS) {
         //went over time limit, so go to finish
         ball_state = finish;
       } else ball_state = test_for_object;

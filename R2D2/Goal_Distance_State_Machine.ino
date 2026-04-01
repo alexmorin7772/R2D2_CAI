@@ -16,6 +16,7 @@ int goal_distance(struct pt* pt) {
       goal_state = test_for_object;
       //initialize everything and test for goal
     } else if (goal_state == test_for_object) {
+      Serial.println("Goal started!");
       //failure leads to checking the time
       if (!huskylens.request()) goal_state = check_time;
       else if (!huskylens.isLearned()) goal_state = check_time;
@@ -23,7 +24,7 @@ int goal_distance(struct pt* pt) {
       else goal_state = evaluate_distance;
       //otherwise find the distance
     } else if (goal_state == check_time) {
-      if (millis() - goal_start_millis > max_milliseconds) {
+      if (millis() - goal_start_millis > MAX_MILLISECONDS) {
         //went over time limit, so go to finish
         goal_state = finish;
       } else goal_state = test_for_object;

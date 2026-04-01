@@ -32,6 +32,24 @@ The following are all defined constants
 #define RISING 3
 */
 
+//Define all macros
+#define BALL_DIAMETER 4.27
+//ball diameter in cm
+#define OUT1 -1
+#define OUT2 -1
+//the OUT1 and OUT2 pins refer to analog pins and we read them to figure out whether to start or stop
+//remember to change the OUT1 and OUT2 pins when we decide on it
+#define ANALOG_RANGE 3.3
+#define ANALOG_MAX 1023.0
+//range of analog voltages and the maximum possible analog reading
+#define ON 3.3
+#define OFF 0.0
+//voltage for on and off signals
+#define GOAL_LUX 100
+//how much lux we want the huskylens to receive
+#define MAX_MILLISECONDS 400 //0.4 second
+//how many milliseconds a huskylens function can run for
+
 //Create all protothread structs
 pt ptEyelid;
 pt ptHuskylens;
@@ -61,8 +79,6 @@ float goal_height;
 bool goal_success;
 location goal_location;
 
-const double BALL_DIAMETER = 4.27;
-//ball diameter in cm
 /*
 Coordinate system
 (0, 0)                 (320, 0)
@@ -100,9 +116,6 @@ int goal_distance(struct pt* pt);
 //state machine variables
 int servo_position = 0;
 
-//other variables
-unsigned long max_milliseconds = 400; //0.4 second
-
 Servo myservo;  // create Servo object to control a servo
 
 int pos = 0;  // variable to store the servo position
@@ -115,25 +128,12 @@ typedef enum lens_adjustment_state {
   lens_finish
 };
 
-int lux = 9999;
-int actual_lux = 9999;
-int goal_lux = 100;
+int lux = 0;
+int actual_lux = 0;
 int angle = 0;
-
-const int OUT1 = -1;
-const int OUT2 = -1;
-//the OUT1 and OUT2 pins go to analog pins and we read them to figure out whether to start or stop
-//remember to change the OUT1 and OUT2 pins when we decide on it
 
 bool started = false;
 //boolean for the start/stop signal
-
-const float ANALOG_RANGE = 3.3;
-const float ANALOG_MAX = 1023.0;
-//range of analog voltages and the maximum possible analog reading
-const float ON = 3.3;
-const float OFF = 0.0;
-//voltage for on and off signals
 
 void setup() {
   Serial.begin(115200);
@@ -159,5 +159,5 @@ void loop() {
   //PT_SCHEDULE(huskyRead(&ptHuskylens));
   PT_SCHEDULE(ball_distance(&pt_ball_distance));
   PT_SCHEDULE(goal_distance(&pt_goal_distance));
-  PT_SCHEDULE(lens_adjustment(&pt_lens_adjustment, goal_lux));
+  PT_SCHEDULE(lens_adjustment(&pt_lens_adjustment));
 }

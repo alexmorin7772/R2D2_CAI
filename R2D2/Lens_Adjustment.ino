@@ -13,9 +13,11 @@ An angle of 0 means that it's completely closed
 To convert to the angle that's used in Malus' law, do (180 - angle) / 2
 */
 
-int lens_adjustment(struct pt* pt, int goal_lux) {
+int lens_adjustment(struct pt* pt) {
   PT_BEGIN(pt);
   for(;;) {
+    //Serial.print("Lens adjustment state: ");
+    //Serial.println(lens_state);
     if (lens_state == lens_start) {
       lens_state = read_lux;
     } else if (lens_state == read_lux) {
@@ -27,8 +29,8 @@ int lens_adjustment(struct pt* pt, int goal_lux) {
       Serial.println(actual_lux);
       lens_state = calculate_angle;
     } else if (lens_state == calculate_angle) {
-      if (goal_lux >= actual_lux) angle = 180;
-      else angle = 180 - 2 * arccos(cbrt(static_cast<float>(goal_lux) / static_cast<float>(actual_lux)));
+      if (GOAL_LUX >= actual_lux) angle = 180;
+      else angle = 180 - 2 * arccos(cbrt(static_cast<float>(GOAL_LUX) / static_cast<float>(actual_lux)));
       Serial.print("Angle: ");
       Serial.println(angle);
       lens_state = move_servo;
