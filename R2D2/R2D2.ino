@@ -15,6 +15,7 @@ pt pt_lens_adjustment;
 pt ptLight;
 pt ptMotor;
 pt ptTerminal;
+pt ptBitFlag;
 
 //Huskylens variables
 HUSKYLENS huskylens;
@@ -151,6 +152,25 @@ enum Modes {
 };
 Modes runMode = rDone;
 
+struct Command {
+    int mode;           
+    float value;        
+    bool isOverride;    
+};
+
+pt_sem sem_ball, sem_goal;
+uint32_t ipc_comms = 0;
+
+// Byte A: Huskylens & Motors (Bits 0-7)
+#define MASK_BALL_CONF  (1UL << 0)  // A1: 0000...0001
+#define MASK_GOAL_CONF  (1UL << 1)  // A2: 0000...0010
+
+// Byte C: Touch Sensor & Feedback (Bits 16-23)
+#define MASK_OBJ_DET    (1UL << 16) // C1
+#define MASK_KICK_AL    (1UL << 17) // C2: High priority flag
+#define MASK_KICK_FAIL  (1UL << 18) // C3: Error feedback
+#define MASK_SENS_ERR   (1UL << 19) // C4
+
 void setup() {
   Serial.begin(115200);
   serial.begin(9600);
@@ -164,6 +184,7 @@ void setup() {
   PT_INIT(&ptLight);
   PT_INIT(&ptMotor);
   PT_INIT(&ptTerminal);
+  PT_INIT(&ptBitFlag);
   myservo.attach(9);  // attaches the servo on pin 9 to the Servo object
   while (!huskylens.begin(serial)) Serial.println("Begin failed!");
   // huskyAlgorithm();   // Huskylens - Vision.ino
@@ -182,4 +203,5 @@ void loop() {
   PT_SCHEDULE(LightSensor(&ptLight));
   PT_SCHEDULE(Motor(&ptMotor));
   PT_SCHEDULE(Terminal(&ptTerminal));
+  PT_SCHEDULE(BitFlag(&ptBitFlag));
 }
