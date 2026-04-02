@@ -108,6 +108,10 @@ typedef struct object_recognition_results {
   //stores the x and y coordinates of the ball (do object_location.x or object_location.y to get the x and y values)
 };
 
+//variables to test semaphores and reading from a shared 32-bit variable
+pt_sem sem_ball, sem_goal;
+uint32_t ipc_comms = 0;
+
 //Initialize functions
 int ball_distance(struct pt* pt);
 int eyelidThread(struct pt* pt);
@@ -145,6 +149,8 @@ void setup() {
   PT_INIT(&pt_ball_distance);
   PT_INIT(&pt_goal_distance);
   PT_INIT(&pt_lens_adjustment);
+  PT_SEM_INIT(&sem_ball, 0);
+  PT_SEM_INIT(&sem_goal, 0);
   myservo.attach(9);  // attaches the servo on pin 9 to the Servo object
   while (!huskylens.begin(serial)) Serial.println("Begin failed!");
   // huskyAlgorithm();   // Huskylens - Vision.ino

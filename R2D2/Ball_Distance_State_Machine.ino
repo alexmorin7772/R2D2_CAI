@@ -16,7 +16,7 @@ int ball_distance(struct pt* pt) {
       ball_state = test_for_object;
       //initialize everything and test for ball
     } else if (ball_state == test_for_object) {
-      Serial.println("Ball started!");
+      //Serial.println("Ball started!");
       //failure leads to checking the time
       if (!huskylens.request()) ball_state = check_time;
       else if (!huskylens.isLearned()) ball_state = check_time;
@@ -25,6 +25,10 @@ int ball_distance(struct pt* pt) {
       //otherwise find the distance
     } else if (ball_state == check_time) {
       if (millis() - ball_start_millis > MAX_MILLISECONDS) {
+        //change the confidence bit to 0 (not confident)
+        ipc_comms &= ~0b1;
+        //set the count to 0 so no other threads can view
+        sem_ball.count = 0;
         //went over time limit, so go to finish
         ball_state = finish;
       } else ball_state = test_for_object;
@@ -46,13 +50,26 @@ int ball_distance(struct pt* pt) {
         Serial.print(", ");
         Serial.print(ball_location.y);
         Serial.println(")");
+        //change the confidence bit to 1 (confident)
+        ipc_comms |= 0b1;
+        //allow other threads to read the results struct
+        PT_SEM_SIGNAL(pt, &sem_ball);
         ball_state = finish; //successfully found the distance, so go to finish
       }
     } else if (ball_state == finish) {
+      //debug prints for the semaphore and shared flags
+      Serial.print("Ball semaphore value: ");
+      Serial.println(sem_ball.count);
+      Serial.print("Ball confidence: ");
+      Serial.println(ipc_comms & 1);
       ball_state = start;
       PT_SLEEP(pt, 1000);
       //recalculate after 1 second
     } else {
+      //change the confidence bit to 0 (not confident)
+      ipc_comms &= ~0b1;
+      //set the count to 0 so no other threads can view
+      sem_ball.count = 0;
       //ball_state doesn't match anything
       ball_state = initialization;
     }

@@ -16,7 +16,7 @@ int goal_distance(struct pt* pt) {
       goal_state = test_for_object;
       //initialize everything and test for goal
     } else if (goal_state == test_for_object) {
-      Serial.println("Goal started!");
+      //Serial.println("Goal started!");
       //failure leads to checking the time
       if (!huskylens.request()) goal_state = check_time;
       else if (!huskylens.isLearned()) goal_state = check_time;
@@ -25,6 +25,10 @@ int goal_distance(struct pt* pt) {
       //otherwise find the distance
     } else if (goal_state == check_time) {
       if (millis() - goal_start_millis > MAX_MILLISECONDS) {
+        //change the confidence bit to 0 (not confident)
+        ipc_comms &= ~0b10;
+        //set the count to 0 so no other threads can view
+        sem_goal.count = 0;
         //went over time limit, so go to finish
         goal_state = finish;
       } else goal_state = test_for_object;
@@ -46,13 +50,26 @@ int goal_distance(struct pt* pt) {
         Serial.print(", ");
         Serial.print(goal_location.y);
         Serial.println(")");
+        //change the confidence bit to 1 (confident)
+        ipc_comms |= 0b10;
+        //allow other threads to read the results struct
+        PT_SEM_SIGNAL(pt, &sem_goal);
         goal_state = finish; //successfully found the distance, so go to finish
       }
     } else if (goal_state == finish) {
+      //debug prints for the semaphore and shared flags
+      Serial.print("Goal semaphore value: ");
+      Serial.println(sem_goal.count);
+      Serial.print("Goal confidence: ");
+      Serial.println(static_cast<bool>(ipc_comms & 0b10));
       goal_state = start;
       PT_SLEEP(pt, 1000);
       //recalculate after 1 second
     } else {
+      //change the confidence bit to 0 (not confident)
+      ipc_comms &= ~0b10;
+      //set the count to 0 so no other threads can view
+      sem_goal.count = 0;
       //goal_state doesn't match anything
       goal_state = initialization;
     }
