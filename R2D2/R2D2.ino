@@ -136,6 +136,7 @@ void setup() {
   PT_INIT(&pt_ball_distance);
   PT_INIT(&pt_goal_distance);
   PT_INIT(&pt_lens_adjustment);
+  PT_INIT(&pt_brain);
   myservo.attach(9);  // attaches the servo on pin 9 to the Servo object
   while (!huskylens.begin(serial)) Serial.println("Begin failed!");
   // huskyAlgorithm();   // Huskylens - Vision.ino
