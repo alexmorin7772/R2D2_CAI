@@ -152,6 +152,7 @@ void loop() {
   //PT_SCHEDULE(ball_distance(&pt_ball_distance));
   //PT_SCHEDULE(goal_distance(&pt_goal_distance));
   PT_SCHEDULE(lens_adjustment(&pt_lens_adjustment, goal_lux));
+  PT_SCHEDULE(brain_loop(&pt_brain));
 }
 
 
