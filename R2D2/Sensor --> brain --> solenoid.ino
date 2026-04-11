@@ -98,9 +98,9 @@ int brain_loop(struct pt* pt) {
           kick_order.power = KICK_POWER_MAX;
 
           // Fire the solenoid at full power
-          analogWrite(SOLENOID_PIN, KICK_POWER_MAX);
-          delay(KICK_DURATION);
-          analogWrite(SOLENOID_PIN, 0);
+          digitalWrite(SOLENOID_PIN, KICK_POWER_MAX);
+          PT_wait(KICK_DURATION);
+          digitalWrite(SOLENOID_PIN, 0);
 
           last_kick_time = millis();
 
@@ -114,9 +114,9 @@ int brain_loop(struct pt* pt) {
           kick_order.power = KICK_POWER_MED;
 
           // Fire solenoid at medium power
-          analogWrite(SOLENOID_PIN, KICK_POWER_MED);
-          delay(KICK_DURATION);
-          analogWrite(SOLENOID_PIN, 0);
+          digitalWrite(SOLENOID_PIN, KICK_POWER_MED);
+          PT_wait(KICK_DURATION);
+          digitalWrite(SOLENOID_PIN, 0);
 
           last_kick_time = millis();
 
