@@ -89,7 +89,7 @@ Coordinate system
 */
 
 //object recognition state machine
-typedef enum object_recognition_state {
+enum object_recognition_state {
   start,
   initialization,
   test_for_object,
@@ -99,7 +99,7 @@ typedef enum object_recognition_state {
 };
 
 //do NOT write to any of these variables except for is_most_recent
-typedef struct object_recognition_results {
+struct object_recognition_results {
   bool is_most_recent = false; //this will be changed to true once the Huskylens writes to it
   //once someone reads it, it should be set to false so the same information isn't used again
   float object_distance;
@@ -124,7 +124,7 @@ Servo myservo;  // create Servo object to control a servo
 
 int pos = 0;  // variable to store the servo position
 
-typedef enum lens_adjustment_state {
+enum lens_adjustment_state {
   lens_start,
   read_lux,
   calculate_angle,
@@ -152,7 +152,7 @@ void setup() {
   PT_SEM_INIT(&sem_ball, 0);
   PT_SEM_INIT(&sem_goal, 0);
   myservo.attach(9);  // attaches the servo on pin 9 to the Servo object
-  while (!huskylens.begin(serial)) Serial.println("Begin failed!");
+  while (!huskylens.begin(Wire)) Serial.println("Begin failed!");
   // huskyAlgorithm();   // Huskylens - Vision.ino
   // motorSetup();       // Motor Driver - 
   // groveDLSsetup();    // Light Sensor - 
