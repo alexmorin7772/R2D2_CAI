@@ -75,7 +75,6 @@ bool check_goal_aligned() {
 
 int brain_loop(struct pt* pt) {
   PT_BEGIN(pt);
-  PT_SCHEDULE(brain_loop(&pt_brain));
   for (;;) {
 
     // Wait until ball state machine signals fresh data
