@@ -1,7 +1,7 @@
-PT_INIT(&pt_brain);
+#define SOLENOID_PIN 8
 pinMode(SOLENOID_PIN, OUTPUT);
 analogWrite(SOLENOID_PIN, 0);
-#define SOLENOID_PIN 8
+
 // Brain.ino — Reads ball/goal sensor data using semaphores,
 // decides when the solenoid should kick, and sends the command.
 // The solenoid person writes the physical kick code separately.
