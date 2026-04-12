@@ -5,6 +5,7 @@
 #include <Digital_Light_TSL2561.h>
 #include <Servo.h>
 #include <SparkFun_TB6612.h>
+#include "pt-sem.h"
 
 //Create all protothread structs
 pt ptEyelid;
@@ -185,6 +186,7 @@ void setup() {
   PT_INIT(&ptMotor);
   PT_INIT(&ptTerminal);
   PT_INIT(&ptBitFlag);
+  PT_SEM_INIT(&sem_cmd_available, 1);
   myservo.attach(9);  // attaches the servo on pin 9 to the Servo object
   while (!huskylens.begin(serial)) Serial.println("Begin failed!");
   // huskyAlgorithm();   // Huskylens - Vision.ino

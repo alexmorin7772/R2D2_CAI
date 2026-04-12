@@ -1,13 +1,14 @@
-// Byte C Motor Control Masks
-#define MASK_MOTOR_MOVE             0x00010000  //Status: 1 = Motors moving, 0 = Idle.
-#define MASK_MOTOR_STALL            0x00020000  //Power is being applied but the robot isn't moving 
-                                                //(common if you're stuck against a wall or another robot).
+// Byte B Motor Control Masks
+#define MASK_MOTOR_MOVE             0x00000100  //Status: 1 = Motors moving, 0 = Idle.
+#define MASK_MOTOR_STALL            0x00000200  //Power is being applied but the robot isn't moving (common if you're stuck against a wall or another robot).
 
-#define MASK_M_DIRECTION            0x00040000 //1 for forward, 0 for backwards
-#define MASK_MOTOR_DONE             0x00080000 //Motors finished the move (Forward/Turn complete).
+#define MASK_M_DIRECTION            0x00000400 //1 for forward, 0 for backwards
+#define MASK_MOTOR_DONE             0x00000800 //Motors finished the move (Forward/Turn complete).
 
-#define MASK_MOTOR_READ             0x00100000 //Motor confirms it received a new order from Logic.
-#define MASK_OVERRIDE_SEEN          0x00200000 //Motor confirms it saw the override flag.
+#define MASK_MOTOR_READ             0x00001000 //Motor confirms it received a new order from Logic.
+#define MASK_OVERRIDE_SEEN          0x00002000 //Motor confirms it saw the override flag and will switch.
+
+#define MASK_TARGET_REACHED         0x00004000 //flag set to 1 right after it has finished a command to move a certain distance/angle
 
 // --- CHECKERS (Used by Logic/Camera to see what Motors are doing) ---
 

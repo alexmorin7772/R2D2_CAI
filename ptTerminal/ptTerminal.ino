@@ -1,42 +1,42 @@
+struct pt_sem sem_cmd_available;
+// Initialize in setup() with PT_SEM_INIT(&sem_cmd_available, 0);
 int Terminal(struct pt* pt) {
     PT_BEGIN(pt);
+
     for(;;) {
-        // 1. CHECK FOR NEW INCOMING DATA
+        // --- 1. RECEIVE DATA ---
         if (Serial.available() > 0) {
             String raw = Serial.readStringUntil('\n');
-            // parseString(raw) fills a temp Command 'cmd'
             Command cmd = parseString(raw);
+
             if (cmd.isOverride) {
-                // EMERGENCY FLAG: Immediate execution
-                newMode = cmd.mode;
-                commandValue = cmd.value;
-                startRun = true;
-                prev = millis(); // Reset the motor timer
-                queueCount = 0;       // Clear pending minor tasks
-            } else {
-                // Add to queue if there's space
+                // EMERGENCY: Take over active slot immediately
+                activeCommand = cmd;
+                queueCount = 0;       // Clear stale tasks
+                PT_SEM_SIGNAL(pt, &sem_cmd_available); // Wake up Motor NOW
+            } 
+            else {
                 if (queueCount < 5) {
                     commandQueue[queueCount++] = cmd;
+                    // We don't signal yet; we wait for the motor to be idle
                 }
             }
         }
 
-        // 2. PROCESS QUEUE (if Motor is currently idle)
+        // Instead of the Motor looking at the queue, the Terminal "pushes" 
+        // the task to the motor when the motor is ready (rDone).
         if (runMode == rDone && queueCount > 0) {
-            // Target the LATEST addition (the "top" of the stack)
+            // LIFO: Grab the newest
             int latestIndex = queueCount - 1;
-
-            newMode = commandQueue[latestIndex].mode;
-            commandValue = commandQueue[latestIndex].value;
-            startRun = true;
-            prev = millis();
-
-            // "Delete" the signal simply by reducing the count
-            // Since we took the last one, no need to shift other elements!
+            activeCommand = commandQueue[latestIndex];
+            
             queueCount--; 
+            
+            // SIGNAL: Tell the Motor thread "The activeCommand is ready for you"
+            PT_SEM_SIGNAL(pt, &sem_cmd_available);
         }
 
-        PT_YIELD(pt); // Keep the terminal responsive
+        PT_YIELD(pt); 
     }
 
     PT_END(pt);
