@@ -101,6 +101,13 @@ static int threadMotorManager(struct pt *pt) {
           ipc_comms |= MASK_IPC_Motor_Read_Confirm;
           ipc_comms |= MASK_MOTOR_MOVING;
           PT_SEM_SIGNAL(pt, &semIPC);
+          if (COPY_NEWDATA) {
+            PT_SEM_WAIT(pt, &semMotor);
+            tempX = motorData.targetX;
+            tempA = motorData.targetAngle;
+            runMode = motorData.opState;
+            PT_SEM_SIGNAL(pt, &semMotor);
+          }
           bMotor = true;
           mainState = msInit;
         } else {
