@@ -25,7 +25,14 @@ ISR(ADC_vect) {
 }
 
 boolean Check_Available_Logic_Event (void) {
-  if (ipc_comms & MASK_IPC_Logic_To_Touch) {
+  if ( (ipc_comms & MASK_IPC_Logic_To_Touch) && !(ipc_comms & MASK_IPC_Touch_Read_Confirmation) ) { // Touch uses Read Confirmation to conclude the last event
+    return true;
+  }
+  return false;
+}
+
+boolean Check_Available_Touch_Event (void) {
+  if ( (ipc_comms & MASK_IPC_Touch_To_Logic) && !(ipc_comms & MASK_IPC_Touch_Read_Confirmation) ) { // Main uses Read Confirmation to conclude the last event
     return true;
   }
   return false;
@@ -67,10 +74,10 @@ int threadADCRead(struct pt* pos)
       PT_SEM_WAIT(pos, &semTouch); // This forces a sleep until the semaphore is signaled by another thread or already signaled
       readSensorPos();  // This enables the sensor sampler and interrupt trigger, setting the adcStarted to true
       PT_WAIT_UNTIL(pos, adcStarted == false); // Forces a sleep until adcStarted returns to false (by the ISR interrupt)
-      ipc_comms |= MASK_IPC_Touch_To_Logic;
+      Post_Touch_Event_to_Logic();
       PT_SEM_SIGNAL(pos, &semTouch); // Releases the next thread th     at was waiting for the semaphore to be signaled
       
-      if (i > 4) {
+      if (i < 4) {
         V_datapoints[i++] = (5.0/1024)*20*A_pos;
       }
       else {
@@ -98,7 +105,7 @@ int threadDisplay(struct pt* disp)
   for (;;)
   {
     // turn the ledPin on
-    digitalWrite(LED_BUILTIN, HIGH); // Using LED_BUILTIN from pinmode
+    // digitalWrite(LED_BUILTIN, HIGH); // Using LED_BUILTIN from pinmode
     // stop the program for <sensorValue> milliseconds:
     // PT_SLEEP(disp, 100);
     
@@ -132,10 +139,16 @@ int threadDisplay(struct pt* disp)
       Serial.print(V_value); // removed offset from the original equation: Serial.println((5.0/1024)*20*A_pos+offset);
       Serial.print(",");
       Serial.print(4.0);
-      // (ipc_comms  MASK_TOUCH_TO_LOGIC)
+      // (ipc_comms  MASK_IPC_TOUCH_TO_LOGIC)
       PT_SEM_WAIT(disp, &semTouch);
+      // Check if event is already sent or "posted", but also check that confirmation is already set to true, then turn off confirmation.
+      if ( (ipc_comms & MASK_IPC_Touch_To_Logic) && (ipc_comms & MASK_IPC_Logic_Read_Confirmation) ) { // The last event was consumed; solution to above comment
+        
+        ipc_comms &= ~MASK_IPC_Logic_Read_Confirmation;
+      }
       Post_Touch_Event_to_Logic();
       bPresent = true;
+      // digitalWrite(LED_BUILTIN, HIGH); // Using LED_BUILTIN from pinmode
       PT_SEM_SIGNAL(disp,&semTouch);
       if (bKick_Again) {
         bKick_Start = true;
@@ -148,6 +161,7 @@ int threadDisplay(struct pt* disp)
       Serial.print(5.0);
       PT_SEM_WAIT(disp, &semTouch);
       Post_Touch_Event_to_Logic();
+      // ipc_comms &= ~MASK_IPC_Touch_To_Logic; // Turned off touch event to not re-trigger "Check_Available_Touch_Event" again
       bPresent = false;
       PT_SEM_SIGNAL(disp,&semTouch);
     }
@@ -156,7 +170,7 @@ int threadDisplay(struct pt* disp)
     Serial.println(V_average);
     
     // turn the ledPin off:
-    digitalWrite(LED_BUILTIN, LOW); // Using LED_BUILTIN from pinmode
+    // digitalWrite(LED_BUILTIN, LOW); // Using LED_BUILTIN from pinmode
 
     PT_SLEEP(disp, 10);
   } // forever
@@ -172,11 +186,41 @@ int threadKick(struct pt* sol) // Worker Thread
   {
     PT_WAIT_UNTIL(sol, bKick_Start);
     digitalWrite(SOLENOID_PIN, HIGH);
+    digitalWrite(LED_BUILTIN, HIGH); // Using LED_BUILTIN from pinmode
     
     PT_SLEEP(sol, 200);
-
+    
+    digitalWrite(LED_BUILTIN, LOW); // Using LED_BUILTIN from pinmode
     digitalWrite(SOLENOID_PIN, LOW);
     bKick_Start = false;
   }
   PT_END(sol);
+}
+
+int threadMain(struct pt* brain) {
+  // digitalWrite(LED_BUILTIN, LOW); // Using LED_BUILTIN from pinmode
+  
+  PT_BEGIN(brain);
+  
+  for(;;){
+    
+    PT_SEM_WAIT(brain, &semTouch);
+    
+    if ( Check_Available_Touch_Event() ) {
+      digitalWrite(LED_BUILTIN, HIGH); // Using LED_BUILTIN from pinmode
+      if (bPresent) {
+        // digitalWrite(LED_BUILTIN, HIGH); // Using LED_BUILTIN from pinmode
+        bKick = true;
+        ipc_comms |= MASK_IPC_Touch_Read_Confirmation;
+      }
+    }
+    
+    PT_SEM_SIGNAL(brain, &semTouch);
+    PT_SLEEP(brain, 100);
+    digitalWrite(LED_BUILTIN, LOW); // Using LED_BUILTIN from pinmode
+
+    PT_SLEEP(brain, 1);
+  }
+  
+  PT_END(brain);
 }

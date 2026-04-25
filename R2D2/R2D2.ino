@@ -58,6 +58,7 @@ pt pt_ball_distance;
 pt pt_goal_distance;
 pt pt_lens_adjustment;
 pt solKick;
+pt ptAlex_test;
 
 //Huskylens variables
 HUSKYLENS huskylens;
@@ -174,15 +175,17 @@ void setup() {
   PT_INIT(&adcDisp); // Touch.ino
   PT_SEM_INIT(&semTouch, 1); // Touch.ino
   PT_INIT(&solKick); // Touch.ino
+  PT_INIT(&ptAlex_test); // Test
   myservo.attach(9);  // attaches the servo on pin 9 to the Servo object
   while (!huskylens.begin(Wire)) Serial.println("Begin failed!");
-  
+
   // Touch.ino setup for code pinmode & ADC
   pinMode(V1, OUTPUT);
   pinMode(V2, OUTPUT);
   pinMode(V_ref_neg, INPUT);
   pinMode(V_wiper, OUTPUT);
   pinMode(LED_BUILTIN, OUTPUT); // Touch.ino for debug purposes, open to change!
+  digitalWrite(LED_BUILTIN, LOW); // Using LED_BUILTIN from pinmode
 
   pinMode(V_LOW, OUTPUT);
   digitalWrite(V_LOW, LOW);
@@ -212,4 +215,5 @@ void loop() {
   PT_SCHEDULE(threadADCRead(&readPos));
   PT_SCHEDULE(threadDisplay(&adcDisp));
   PT_SCHEDULE(threadKick(&solKick));
+  PT_SCHEDULE(threadMain(&ptAlex_test));
 }
