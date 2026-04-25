@@ -4,6 +4,7 @@
 #include <Wire.h>
 #include <Digital_Light_TSL2561.h>
 #include <Servo.h>
+#include "pt-sem.h"
 
 /*
 The following are all defined constants
@@ -56,6 +57,7 @@ pt ptHuskylens;
 pt pt_ball_distance;
 pt pt_goal_distance;
 pt pt_lens_adjustment;
+pt solKick;
 
 //Huskylens variables
 HUSKYLENS huskylens;
@@ -139,6 +141,23 @@ int angle = 0;
 bool started = false;
 //boolean for the start/stop signal
 
+// Touch.ino declaration code
+extern struct pt_sem semTouch;
+// Define a global variable to store the ADC reading
+volatile int A_pos = 0;
+// Flag to indicate if a reading is available
+volatile bool adcStarted = false;
+
+int offset = 0;
+#define V1          2 // changed from D4 to D2 (12-20-2025)
+#define V2          A0
+#define V_wiper     A1
+#define V_ref_neg   5
+#define V_LOW       7
+
+pt readPos, adcDisp;
+// **************************
+
 void setup() {
   Serial.begin(115200);
   serial.begin(9600);
@@ -151,8 +170,32 @@ void setup() {
   PT_INIT(&pt_lens_adjustment);
   PT_SEM_INIT(&sem_ball, 0);
   PT_SEM_INIT(&sem_goal, 0);
+  PT_INIT(&readPos); // Touch.ino
+  PT_INIT(&adcDisp); // Touch.ino
+  PT_SEM_INIT(&semTouch, 1); // Touch.ino
+  PT_INIT(&solKick); // Touch.ino
   myservo.attach(9);  // attaches the servo on pin 9 to the Servo object
-  while (!huskylens.begin(serial)) Serial.println("Begin failed!");
+  while (!huskylens.begin(Wire)) Serial.println("Begin failed!");
+  
+  // Touch.ino setup for code pinmode & ADC
+  pinMode(V1, OUTPUT);
+  pinMode(V2, OUTPUT);
+  pinMode(V_ref_neg, INPUT);
+  pinMode(V_wiper, OUTPUT);
+  pinMode(LED_BUILTIN, OUTPUT); // Touch.ino for debug purposes, open to change!
+
+  pinMode(V_LOW, OUTPUT);
+  digitalWrite(V_LOW, LOW);
+
+  cli(); // Disable global interrupts until required
+
+  // Configure ADC settings
+  ADCSRA = bit(ADEN);  // Enable ADC
+  ADCSRA |= bit(ADPS0) | bit(ADPS1) | bit(ADPS2); // Set ADC clock prescaler
+  ADMUX = bit(REFS0) | 1; // Set voltage reference and select ADC channel
+  ADCSRA |= bit(ADIE); // Enable ADC interrupt
+  // **************************************
+
   // huskyAlgorithm();   // Huskylens - Vision.ino
   // motorSetup();       // Motor Driver - 
   // groveDLSsetup();    // Light Sensor - 
@@ -163,7 +206,10 @@ void setup() {
 void loop() {
   //PT_SCHEDULE(eyelidThread(&ptEyelid));
   //PT_SCHEDULE(huskyRead(&ptHuskylens));
-  PT_SCHEDULE(ball_distance(&pt_ball_distance));
-  PT_SCHEDULE(goal_distance(&pt_goal_distance));
-  PT_SCHEDULE(lens_adjustment(&pt_lens_adjustment));
+  // *PT_SCHEDULE(ball_distance(&pt_ball_distance));
+  // *PT_SCHEDULE(goal_distance(&pt_goal_distance));
+  // *PT_SCHEDULE(lens_adjustment(&pt_lens_adjustment));
+  PT_SCHEDULE(threadADCRead(&readPos));
+  PT_SCHEDULE(threadDisplay(&adcDisp));
+  PT_SCHEDULE(threadKick(&solKick));
 }

@@ -1,6 +1,7 @@
 object_recognition_state goal_state = start;
 object_recognition_results goal_results;
 unsigned long goal_start_millis;
+extern pt_sem sem_goal;
 
 int goal_distance(struct pt* pt) {
   PT_BEGIN(pt);
@@ -28,7 +29,7 @@ int goal_distance(struct pt* pt) {
         //change the confidence bit to 0 (not confident)
         ipc_comms &= ~0b10;
         //set the count to 0 so no other threads can view
-        sem_goal.count = 0;
+        // sem_goal.count = 0;
         //went over time limit, so go to finish
         goal_state = finish;
       } else goal_state = test_for_object;
@@ -59,7 +60,7 @@ int goal_distance(struct pt* pt) {
     } else if (goal_state == finish) {
       //debug prints for the semaphore and shared flags
       Serial.print("Goal semaphore value: ");
-      Serial.println(sem_goal.count);
+      // Serial.println(sem_goal.count);
       Serial.print("Goal confidence: ");
       Serial.println(static_cast<bool>(ipc_comms & 0b10));
       goal_state = start;
@@ -69,7 +70,7 @@ int goal_distance(struct pt* pt) {
       //change the confidence bit to 0 (not confident)
       ipc_comms &= ~0b10;
       //set the count to 0 so no other threads can view
-      sem_goal.count = 0;
+      // sem_goal.count = 0;
       //goal_state doesn't match anything
       goal_state = initialization;
     }
