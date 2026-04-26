@@ -159,6 +159,8 @@ int offset = 0;
 pt readPos, adcDisp;
 // **************************
 
+#define SOLENOID_PIN 12
+
 void setup() {
   Serial.begin(115200);
   serial.begin(9600);
@@ -184,6 +186,7 @@ void setup() {
   pinMode(V2, OUTPUT);
   pinMode(V_ref_neg, INPUT);
   pinMode(V_wiper, OUTPUT);
+  pinMode(SOLENOID_PIN, OUTPUT);
   pinMode(LED_BUILTIN, OUTPUT); // Touch.ino for debug purposes, open to change!
   digitalWrite(LED_BUILTIN, LOW); // Using LED_BUILTIN from pinmode
 
