@@ -40,32 +40,33 @@ static struct pt_sem semMotor;    // Protects motor data payload
 
 // Handshake Flags
 volatile bool bMotor = false;     // Local flag to trigger slave thread
-static struct pt_sem semWorker;    // Protects bmotor and slave data
+//static struct pt_sem semWorker;    // Protects bmotor and slave data
+volatile bool bRunOnce = false;
 
 //global variables
 static uint32_t COPY_SPEED;
 float tempX;
 float tempA;
 Modes runMode;
-uint32_t TmrStart;
-uint32_t TmrDur;
+static uint32_t TmrStart;
+static uint32_t TmrDur;
 
 pt ptManager;
-pt ptSlave;
+pt ptWorker;
+pt ptTestBrain;
 
 // Bitmasks (Example based on your provided hex values)
 #define MASK_IPC_Motor_Read_Confirm     0x00000100 //0000 0000 0000 0000 0000 0001 0000 0000
-#define MASK_IPC_Logic_To_Motor 0x00001000 //0000 0000 0000 0000 0001 0000 0000 0000
+#define MASK_IPC_Brain_To_Motor 0x00001000 //0000 0000 0000 0000 0001 0000 0000 0000
 #define MASK_MOTOR_MOVING 0x00000200
-#define MASK_OVERRIDE_SEEN 0x0000400
+#define MASK_OVERRIDE_SEEN 0x00000400
 #define MASK_OVERRIDE_FLAG 0x00002000
 #define MASK_SPEED 0x00004000 //1 = fast, 0 = slow
 
 // States for simulating for Main protothread's logic/brain execution.
 enum eMState {
   msInit = 0,   // State to do one-time initialization or full restart of the state machine
-  msFlagCheck,  // Triggers/waits touch sensor read and execute a solenoid kick if needed
-  msReadValue,  // Triggers/Waits for the ADC read value to execute
+  msFlagCheck,  //Waits for signal from bit flags and gets data from struct
 } mainState;
 
 static int threadMotorManager(struct pt *pt) {
@@ -78,52 +79,62 @@ static int threadMotorManager(struct pt *pt) {
       // 1) Check bitflags for new task signal (Logic -> Motor)
       PT_SEM_WAIT(pt, &semIPC); //set local flags for things that i am looking for
        //copy the logic/motor to local flag
+      Serial.println("checking for override");
       static uint32_t COPY_OVERRIDE = (ipc_comms & MASK_OVERRIDE_FLAG);  
+      Serial.println(COPY_OVERRIDE, HEX);
       COPY_SPEED = (ipc_comms & MASK_SPEED);
-      ipc_comms &= ~MASK_OVERRIDE_FLAG; //check override all the time, only check newdata when finished with task
-      ipc_comms |= MASK_OVERRIDE_SEEN;
+      if (COPY_OVERRIDE) {
+        Serial.println("clearing override");
+        ipc_comms &= ~MASK_OVERRIDE_FLAG; //check override all the time, only check newdata when finished with task
+        ipc_comms |= MASK_OVERRIDE_SEEN;
+      }
       PT_SEM_SIGNAL(pt, &semIPC); //Give control back
       if (COPY_OVERRIDE) { //Now check to see
+        Serial.println("override flag");
         // 2) Check struct to get data
         PT_SEM_WAIT(pt, &semMotor);
         tempX = motorData.targetX;
         tempA = motorData.targetAngle;
         runMode = motorData.opState;
         PT_SEM_SIGNAL(pt, &semMotor);
-
         // Trigger the Slave Thread
-        PT_SEM_WAIT(pt, &semWorker);
+        bMotor = true;
+        Serial.println("worker starts");
         // Pass data to slave (re-using motor data or a slave-specific struct)
-        if (!bMotor) {
-          PT_SEM_WAIT(pt, &semIPC);
-          static uint32_t COPY_NEWDATA = (ipc_comms & MASK_IPC_Logic_To_Motor);
-          ipc_comms &= ~MASK_IPC_Logic_To_Motor;
-          ipc_comms |= MASK_IPC_Motor_Read_Confirm;
-          ipc_comms |= MASK_MOTOR_MOVING;
-          PT_SEM_SIGNAL(pt, &semIPC);
-          if (COPY_NEWDATA) {
-            PT_SEM_WAIT(pt, &semMotor);
-            tempX = motorData.targetX;
-            tempA = motorData.targetAngle;
-            runMode = motorData.opState;
-            PT_SEM_SIGNAL(pt, &semMotor);
-          }
-          bMotor = true;
-          mainState = msInit;
-        } else {
-          mainState = msInit;
-        }
-        PT_SEM_SIGNAL(pt, &semWorker);
-        // Wait until Slave completes the task (Calculation + Spawn)
-        PT_WAIT_WHILE(pt, !bMotor);
-      } 
+      }
+      PT_WAIT_WHILE(pt, bMotor);
+      //Serial.println("not bmotor");
+      PT_SEM_WAIT(pt, &semIPC);
+      Serial.println("checking for normal flag");
+      static uint32_t COPY_NEWDATA = (ipc_comms & MASK_IPC_Brain_To_Motor);
+      if (COPY_NEWDATA) {
+        ipc_comms &= ~MASK_IPC_Brain_To_Motor;
+        ipc_comms |= MASK_IPC_Motor_Read_Confirm;
+        ipc_comms |= MASK_MOTOR_MOVING;
+      }
+      PT_SEM_SIGNAL(pt, &semIPC);
+      if (COPY_NEWDATA) {
+        PT_SEM_WAIT(pt, &semMotor);
+        tempX = motorData.targetX;
+        tempA = motorData.targetAngle;
+        runMode = motorData.opState;
+        PT_SEM_SIGNAL(pt, &semMotor);
+      }
+      if (!bRunOnce) {
+        bMotor = true;
+      }
+      mainState = msInit;
+    } else {
+        mainState = msInit;
     }
+      // Wait until Slave completes the task (Calculation + Spawn)
+    PT_WAIT_UNTIL(pt, !bMotor); 
     PT_SLEEP(pt, 10);
   }
   PT_END(pt);
 }
 
-static int threadMotorSlave(struct pt *pt) {
+static int threadMotorWorker(struct pt *pt) {
   static struct pt ptTimerSpawn; // Structure for the child timer
   static uint32_t moveTime;
   static float fastspeedconst = 500; //purely hypothetical. need to decide
@@ -137,7 +148,9 @@ static int threadMotorSlave(struct pt *pt) {
 
   for(;;) {
     // Wait for the Manager to signal "true"
-    PT_WAIT_WHILE(pt, bMotor);
+    digitalWrite(LED_BUILTIN, HIGH);
+
+    PT_WAIT_UNTIL(pt, bMotor);
 
     // 4) Calculate time needed to move x distance or x angle
     // Logic: Time = (Distance * factor) or (Angle * factor)
@@ -155,15 +168,17 @@ static int threadMotorSlave(struct pt *pt) {
       }
     }
 
-    // 5) Start pt_spawn to time the action
-    TmrStart = millis();
-    TmrDur = moveTime;
     
     if (COPY_SPEED) {
       speedconst = fastspeedconst;
     } else {
       speedconst = slowspeedconst;
     }
+
+    TmrStart = millis();
+    TmrDur = moveTime;
+
+    Serial.println("begin moving");
 
     if (runMode == rForward) {
       forward(motor1, motor2, speedconst);
@@ -174,17 +189,17 @@ static int threadMotorSlave(struct pt *pt) {
     } else if (runMode == rRotateR){
       right(motor1, motor2, 2*speedconst);
     }
-    
+
     PT_SPAWN(pt, &ptTimerSpawn, threadTimer_MotorWait(&ptTimerSpawn));
-    
+
+    digitalWrite(LED_BUILTIN, LOW);
+
     brake(motor1, motor2);
     //Tell ipc comms movement stopped
-
-    PT_SEM_WAIT(pt, &semWorker);
     bMotor = false;
-    PT_SEM_SIGNAL(pt, &semWorker);
-    
-    PT_YIELD(pt);
+    bRunOnce = true;
+    //PT_YIELD(pt);
+    PT_SLEEP(pt, 1);
   }
 
   PT_END(pt);
@@ -195,8 +210,8 @@ int threadTimer_MotorWait(struct pt *move)
   // mark the beginnning of the kick wait thread
   PT_BEGIN(move);
 
-  PT_WAIT_WHILE(move, getTicksDuration(TmrStart, millis()) >= TmrDur); // One tick is 1 milliseconds
-
+  PT_WAIT_UNTIL(move, getTicksDuration(TmrStart, millis()) >= TmrDur); // One tick is 1 milliseconds
+  
   PT_EXIT(move);
 
   PT_END(move);
@@ -211,14 +226,58 @@ unsigned long getTicksDuration(unsigned long prevTicks, unsigned long currTicks)
   return (currTicks - prevTicks);  // Now just return the difference
 }
 
+static int threadTestInjector(struct pt *pt) {
+  PT_BEGIN(pt);
+
+  mainState = msInit;
+
+  for(;;) {
+    if (Serial.available()) {
+      char cmd = Serial.read();
+      Serial.println("brain takes control");
+      PT_SEM_WAIT(pt, &semMotor);
+      PT_SEM_WAIT(pt, &semIPC);
+      if (cmd == 'f') { // Test Forward
+        motorData.targetX = 340.0;
+        motorData.opState = rForward;
+        ipc_comms |= MASK_IPC_Brain_To_Motor;
+        Serial.println("FORWARD command");
+      } else if (cmd == 'r') { // Test Rotate
+        motorData.targetAngle = 90.0;
+        motorData.opState = rRotateL;
+        ipc_comms |= MASK_OVERRIDE_FLAG; // You require this to trigger the Manager
+        Serial.println(ipc_comms, HEX);
+        Serial.println("ROTATE command");
+        Serial.println(">>> Injecting OVERRIDE");
+      } else if (cmd == 'b') { //Test Backwards
+        motorData.targetX = 340.0;
+        motorData.opState = rBackward;
+        ipc_comms |= MASK_IPC_Brain_To_Motor;
+        Serial.println("BACKWARD command");
+      }
+      Serial.println("brain gives up control");
+      PT_SEM_SIGNAL(pt, &semIPC);
+      PT_SEM_SIGNAL(pt, &semMotor);
+    }
+    PT_SLEEP(pt, 10);
+  }
+  PT_END(pt);
+}
+
 void setup() {
   Serial.begin(115200);
-  Serial.begin(9600);
   PT_INIT(&ptManager);
-  PT_INIT(&ptSlave);
+  PT_INIT(&ptWorker);
+  PT_INIT(&ptTestBrain);
+  PT_SEM_INIT(&semIPC, 1);
+  PT_SEM_INIT(&semMotor, 1);
+  //PT_SEM_INIT(&semWorker, 1);
+  pinMode(LED_BUILTIN, OUTPUT);
+  digitalWrite(LED_BUILTIN, LOW);
 }
 
 void loop() {
-  PT_SCHEDULE(threadMotorSlave(&ptSlave));
+  PT_SCHEDULE(threadMotorWorker(&ptWorker));
   PT_SCHEDULE(threadMotorManager(&ptManager));
+  PT_SCHEDULE(threadTestInjector(&ptTestBrain));
 }
