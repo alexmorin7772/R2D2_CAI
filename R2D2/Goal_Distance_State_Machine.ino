@@ -25,10 +25,11 @@ int goal_distance(struct pt* pt) {
       //otherwise find the distance
     } else if (goal_state == check_time) {
       if (millis() - goal_start_millis > MAX_MILLISECONDS) {
+        PT_SEM_WAIT(pt, &sem_goal);
         //change the confidence bit to 0 (not confident)
         ipc_comms &= ~0b10;
-        //set the count to 0 so no other threads can view
-        sem_goal.count = 0;
+        goal_results.is_most_recent = false;
+        PT_SEM_SIGNAL(pt, &sem_goal);
         //went over time limit, so go to finish
         goal_state = finish;
       } else goal_state = test_for_object;
@@ -39,10 +40,6 @@ int goal_distance(struct pt* pt) {
         goal_height = static_cast<float>(result.height);
         goal_current_distance = (goal_size_30 * 30) / goal_height;
         goal_location = {result.xCenter, result.yCenter};
-        goal_results.object_distance = goal_current_distance;
-        goal_results.object_size = goal_height;
-        goal_results.object_location = goal_location;
-        goal_results.is_most_recent = true;
         Serial.print("Goal distance: ");
         Serial.println(goal_current_distance);
         Serial.print("Location: (");
@@ -50,6 +47,12 @@ int goal_distance(struct pt* pt) {
         Serial.print(", ");
         Serial.print(goal_location.y);
         Serial.println(")");
+        //take control of the results struct
+        PT_SEM_WAIT(pt, &sem_goal);
+        goal_results.object_distance = goal_current_distance;
+        goal_results.object_size = goal_height;
+        goal_results.object_location = goal_location;
+        goal_results.is_most_recent = true;
         //change the confidence bit to 1 (confident)
         ipc_comms |= 0b10;
         //allow other threads to read the results struct
@@ -66,10 +69,11 @@ int goal_distance(struct pt* pt) {
       PT_SLEEP(pt, 1000);
       //recalculate after 1 second
     } else {
+      PT_SEM_WAIT(pt, &sem_goal);
       //change the confidence bit to 0 (not confident)
       ipc_comms &= ~0b10;
-      //set the count to 0 so no other threads can view
-      sem_goal.count = 0;
+      goal_results.is_most_recent = false;
+      PT_SEM_SIGNAL(pt, &sem_goal);
       //goal_state doesn't match anything
       goal_state = initialization;
     }

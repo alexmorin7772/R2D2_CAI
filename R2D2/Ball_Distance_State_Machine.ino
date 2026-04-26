@@ -25,10 +25,11 @@ int ball_distance(struct pt* pt) {
       //otherwise find the distance
     } else if (ball_state == check_time) {
       if (millis() - ball_start_millis > MAX_MILLISECONDS) {
+        PT_SEM_WAIT(pt, &sem_ball);
         //change the confidence bit to 0 (not confident)
         ipc_comms &= ~0b1;
-        //set the count to 0 so no other threads can view
-        sem_ball.count = 0;
+        ball_results.is_most_recent = false;
+        PT_SEM_SIGNAL(pt, &sem_ball);
         //went over time limit, so go to finish
         ball_state = finish;
       } else ball_state = test_for_object;
@@ -39,10 +40,6 @@ int ball_distance(struct pt* pt) {
         ball_current_size = (static_cast<float>(result.width) + static_cast<float>(result.height)) / 2.0;
         ball_current_distance = (ball_size_10 * 10) / ball_current_size;
         ball_location = {result.xCenter, result.yCenter};
-        ball_results.object_distance = ball_current_distance;
-        ball_results.object_size = ball_current_size;
-        ball_results.object_location = ball_location;
-        ball_results.is_most_recent = true;
         Serial.print("Ball distance: ");
         Serial.println(ball_current_distance);
         Serial.print("Location: (");
@@ -50,6 +47,12 @@ int ball_distance(struct pt* pt) {
         Serial.print(", ");
         Serial.print(ball_location.y);
         Serial.println(")");
+        //take control of the results struct
+        PT_SEM_WAIT(pt, &sem_ball);
+        ball_results.object_distance = ball_current_distance;
+        ball_results.object_size = ball_current_size;
+        ball_results.object_location = ball_location;
+        ball_results.is_most_recent = true;
         //change the confidence bit to 1 (confident)
         ipc_comms |= 0b1;
         //allow other threads to read the results struct
@@ -66,10 +69,11 @@ int ball_distance(struct pt* pt) {
       PT_SLEEP(pt, 1000);
       //recalculate after 1 second
     } else {
+      PT_SEM_WAIT(pt, &sem_ball);
       //change the confidence bit to 0 (not confident)
       ipc_comms &= ~0b1;
-      //set the count to 0 so no other threads can view
-      sem_ball.count = 0;
+      ball_results.is_most_recent = false;
+      PT_SEM_SIGNAL(pt, &sem_ball);
       //ball_state doesn't match anything
       ball_state = initialization;
     }
