@@ -50,6 +50,7 @@ float tempA;
 Modes runMode;
 static uint32_t TmrStart;
 static uint32_t TmrDur;
+static uint32_t StartTime;
 
 pt ptManager;
 pt ptWorker;
@@ -71,6 +72,8 @@ enum eMState {
 
 static int threadMotorManager(struct pt *pt) {
   PT_BEGIN(pt);
+  static uint32_t COPY_OVERRIDE;
+  static uint32_t COPY_NEWDATA;
   for(;;) {
     if (mainState == msInit) {
       mainState = msFlagCheck;
@@ -80,8 +83,9 @@ static int threadMotorManager(struct pt *pt) {
       PT_SEM_WAIT(pt, &semIPC); //set local flags for things that i am looking for
        //copy the logic/motor to local flag
       Serial.println("checking for override");
-      static uint32_t COPY_OVERRIDE = (ipc_comms & MASK_OVERRIDE_FLAG);  
+      COPY_OVERRIDE = (ipc_comms & MASK_OVERRIDE_FLAG);  
       Serial.println(COPY_OVERRIDE, HEX);
+      Serial.println(ipc_comms, HEX);
       COPY_SPEED = (ipc_comms & MASK_SPEED);
       if (COPY_OVERRIDE) {
         Serial.println("clearing override");
@@ -103,11 +107,12 @@ static int threadMotorManager(struct pt *pt) {
         // Pass data to slave (re-using motor data or a slave-specific struct)
       }
       PT_WAIT_WHILE(pt, bMotor);
-      //Serial.println("not bmotor");
+      Serial.println("not bmotor");
       PT_SEM_WAIT(pt, &semIPC);
       Serial.println("checking for normal flag");
-      static uint32_t COPY_NEWDATA = (ipc_comms & MASK_IPC_Brain_To_Motor);
+      COPY_NEWDATA = (ipc_comms & MASK_IPC_Brain_To_Motor);
       if (COPY_NEWDATA) {
+        Serial.println("clearing brain->motor");
         ipc_comms &= ~MASK_IPC_Brain_To_Motor;
         ipc_comms |= MASK_IPC_Motor_Read_Confirm;
         ipc_comms |= MASK_MOTOR_MOVING;
@@ -119,8 +124,6 @@ static int threadMotorManager(struct pt *pt) {
         tempA = motorData.targetAngle;
         runMode = motorData.opState;
         PT_SEM_SIGNAL(pt, &semMotor);
-      }
-      if (!bRunOnce) {
         bMotor = true;
       }
       mainState = msInit;
@@ -129,7 +132,8 @@ static int threadMotorManager(struct pt *pt) {
     }
       // Wait until Slave completes the task (Calculation + Spawn)
     PT_WAIT_UNTIL(pt, !bMotor); 
-    PT_SLEEP(pt, 10);
+    StartTime = millis();
+    PT_WAIT_UNTIL(pt, getTicksDuration(StartTime, millis()) >= 1);
   }
   PT_END(pt);
 }
@@ -151,6 +155,8 @@ static int threadMotorWorker(struct pt *pt) {
     digitalWrite(LED_BUILTIN, HIGH);
 
     PT_WAIT_UNTIL(pt, bMotor);
+    ipc_comms &= ~MASK_OVERRIDE_SEEN;
+    ipc_comms &= ~MASK_IPC_Motor_Read_Confirm;
 
     // 4) Calculate time needed to move x distance or x angle
     // Logic: Time = (Distance * factor) or (Angle * factor)
@@ -197,7 +203,6 @@ static int threadMotorWorker(struct pt *pt) {
     brake(motor1, motor2);
     //Tell ipc comms movement stopped
     bMotor = false;
-    bRunOnce = true;
     //PT_YIELD(pt);
     PT_SLEEP(pt, 1);
   }
@@ -238,7 +243,7 @@ static int threadTestInjector(struct pt *pt) {
       PT_SEM_WAIT(pt, &semMotor);
       PT_SEM_WAIT(pt, &semIPC);
       if (cmd == 'f') { // Test Forward
-        motorData.targetX = 340.0;
+        motorData.targetX = 1020.0;
         motorData.opState = rForward;
         ipc_comms |= MASK_IPC_Brain_To_Motor;
         Serial.println("FORWARD command");
