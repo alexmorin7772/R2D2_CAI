@@ -1,4 +1,7 @@
 /*
+touch.h, created by Alex
+Header file reference for bit flags & bit masks in "Touch.ino" in the R2D2_CAI Repository (git).
+
 Section C of ipc_comms control variable: maps as follows (least significant bit right to left)
 Written in hexadecimal: starts with "0x" instead of "0b"
 
@@ -20,6 +23,10 @@ Written in hexadecimal: starts with "0x" instead of "0b"
 #define MASK_IPC_Touch_Read_Confirmation   0x00400000 // same as 0b 0000 0000 0100 0000 0000 0000 0000 0000 - Same as Brain confirming that it read from Touch
 #define MASK_IPC_Brain_To_Touch            0x00800000 // same as 0b 0000 0000 1000 0000 0000 0000 0000 0000
 
+// static int threadADCRead(struct pt* pos) __attribute__((optimize("-O0")));
+// static int threadDisplay(struct pt* disp) __attribute__((optimize("-O0")));
+// static int threadKick(struct pt* sol) __attribute__((optimize("-O0")));
+// static int threadMain(struct pt* brain) __attribute__((optimize("-O0")));
 /*
 Example Use Case:
 Touch task uses MASK_IPC_Touch_To_Brain (as a value) to indicate data is sent & available for Brain to read

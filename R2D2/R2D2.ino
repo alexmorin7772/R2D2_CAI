@@ -5,6 +5,7 @@
 #include <Digital_Light_TSL2561.h>
 #include <Servo.h>
 #include "pt-sem.h"
+#include "touch.h"
 
 /*
 The following are all defined constants
@@ -187,6 +188,7 @@ void setup() {
   pinMode(V_ref_neg, INPUT);
   pinMode(V_wiper, OUTPUT);
   pinMode(SOLENOID_PIN, OUTPUT);
+  digitalWrite(SOLENOID_PIN, LOW);  // Initialize de-energized
   pinMode(LED_BUILTIN, OUTPUT); // Touch.ino for debug purposes, open to change!
   digitalWrite(LED_BUILTIN, LOW); // Using LED_BUILTIN from pinmode
 
