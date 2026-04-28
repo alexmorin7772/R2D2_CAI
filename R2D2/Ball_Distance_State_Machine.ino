@@ -27,7 +27,7 @@ int ball_distance(struct pt* pt) {
       if (millis() - ball_start_millis > MAX_MILLISECONDS) {
         PT_SEM_WAIT(pt, &sem_ball);
         //change the confidence bit to 0 (not confident)
-        ipc_comms &= ~0b1;
+        ipc_comms &= ~BALL_CONFIDENCE;
         ball_results.is_most_recent = false;
         PT_SEM_SIGNAL(pt, &sem_ball);
         //went over time limit, so go to finish
@@ -54,7 +54,7 @@ int ball_distance(struct pt* pt) {
         ball_results.object_location = ball_location;
         ball_results.is_most_recent = true;
         //change the confidence bit to 1 (confident)
-        ipc_comms |= 0b1;
+        ipc_comms |= BALL_CONFIDENCE;
         //allow other threads to read the results struct
         PT_SEM_SIGNAL(pt, &sem_ball);
         ball_state = finish; //successfully found the distance, so go to finish
@@ -64,14 +64,14 @@ int ball_distance(struct pt* pt) {
       Serial.print("Ball semaphore value: ");
       Serial.println(sem_ball.count);
       Serial.print("Ball confidence: ");
-      Serial.println(ipc_comms & 1);
+      Serial.println(ipc_comms & BALL_CONFIDENCE);
       ball_state = start;
       PT_SLEEP(pt, 1000);
       //recalculate after 1 second
     } else {
       PT_SEM_WAIT(pt, &sem_ball);
       //change the confidence bit to 0 (not confident)
-      ipc_comms &= ~0b1;
+      ipc_comms &= ~BALL_CONFIDENCE;
       ball_results.is_most_recent = false;
       PT_SEM_SIGNAL(pt, &sem_ball);
       //ball_state doesn't match anything

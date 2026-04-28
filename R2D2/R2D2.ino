@@ -47,14 +47,18 @@ The following are all defined constants
 //voltage for on and off signals
 #define GOAL_LUX 100
 //how much lux we want the huskylens to receive
-#define MAX_MILLISECONDS 400 //0.4 second
+#define MAX_MILLISECONDS 200 //0.4 second
 //how many milliseconds a huskylens function can run for
+#define BALL_CONFIDENCE 0b1
+#define GOAL_CONFIDENCE 0b10
+#define LINE_CONFIDENCE 0b100
 
 //Create all protothread structs
 pt ptEyelid;
 pt ptHuskylens;
 pt pt_ball_distance;
 pt pt_goal_distance;
+pt pt_line_tracking;
 pt pt_lens_adjustment;
 
 //Huskylens variables
@@ -69,15 +73,16 @@ struct location {
 float ball_size_10 = 120.0;
 float ball_current_distance;
 float ball_current_size;
-bool ball_success;
 location ball_location;
 
 //goal distance variables
 float goal_size_30 = 100.0;
 float goal_current_distance;
 float goal_height;
-bool goal_success;
 location goal_location;
+
+//line tracking variables
+location line_origin, line_target;
 
 /*
 Coordinate system
@@ -98,6 +103,15 @@ enum object_recognition_state {
   finish
 };
 
+enum line_tracking_state {
+  line_start,
+  line_initialization,
+  test_for_line,
+  line_check_time,
+  process_line,
+  line_finish
+};
+
 //do NOT write to any of these variables except for is_most_recent
 struct object_recognition_results {
   bool is_most_recent = false; //this will be changed to true once the Huskylens writes to it
@@ -105,17 +119,17 @@ struct object_recognition_results {
   float object_distance;
   float object_size;
   location object_location;
-  //stores the x and y coordinates of the ball (do object_location.x or object_location.y to get the x and y values)
+  //stores the x and y coordinates of the object (do object_location.x or object_location.y to get the x and y values)
+};
+
+struct line_tracking_results {
+  location origin, target;
+  bool is_most_recent = false;
 };
 
 //variables to test semaphores and reading from a shared 32-bit variable
-pt_sem sem_ball, sem_goal;
+pt_sem sem_ball, sem_goal, sem_line;
 uint32_t ipc_comms = 0;
-
-//Initialize functions
-int ball_distance(struct pt* pt);
-int eyelidThread(struct pt* pt);
-int goal_distance(struct pt* pt);
 
 //state machine variables
 int servo_position = 0;
@@ -148,9 +162,11 @@ void setup() {
   PT_INIT(&ptHuskylens);
   PT_INIT(&pt_ball_distance);
   PT_INIT(&pt_goal_distance);
+  PT_INIT(&pt_line_tracking);
   PT_INIT(&pt_lens_adjustment);
   PT_SEM_INIT(&sem_ball, 1);
   PT_SEM_INIT(&sem_goal, 1);
+  PT_SEM_INIT(&sem_line, 1);
   myservo.attach(9);  // attaches the servo on pin 9 to the Servo object
   while (!huskylens.begin(Wire)) Serial.println("Begin failed!");
   // huskyAlgorithm();   // Huskylens - Vision.ino
@@ -165,5 +181,6 @@ void loop() {
   //PT_SCHEDULE(huskyRead(&ptHuskylens));
   PT_SCHEDULE(ball_distance(&pt_ball_distance));
   PT_SCHEDULE(goal_distance(&pt_goal_distance));
+  PT_SCHEDULE(line_tracking(&pt_line_tracking));
   PT_SCHEDULE(lens_adjustment(&pt_lens_adjustment));
 }
