@@ -133,7 +133,7 @@ static int threadMotorManager(struct pt *pt) {
       // Wait until Slave completes the task (Calculation + Spawn)
     PT_WAIT_UNTIL(pt, !bMotor); 
     StartTime = millis();
-    PT_WAIT_UNTIL(pt, getTicksDuration(StartTime, millis()) >= 1);
+    PT_SLEEP(pt, 1);
   }
   PT_END(pt);
 }
@@ -196,6 +196,7 @@ static int threadMotorWorker(struct pt *pt) {
       right(motor1, motor2, 2*speedconst);
     }
 
+    Serial.println("moving");
     PT_SPAWN(pt, &ptTimerSpawn, threadTimer_MotorWait(&ptTimerSpawn));
 
     digitalWrite(LED_BUILTIN, LOW);
@@ -215,7 +216,7 @@ int threadTimer_MotorWait(struct pt *move)
   // mark the beginnning of the kick wait thread
   PT_BEGIN(move);
 
-  PT_WAIT_UNTIL(move, getTicksDuration(TmrStart, millis()) >= TmrDur); // One tick is 1 milliseconds
+  PT_WAIT_UNTIL(move, getTicksDuration(TmrStart, millis()) >= TmrDur || (ipc_comms & MASK_OVERRIDE_FLAG)); // One tick is 1 milliseconds
   
   PT_EXIT(move);
 
