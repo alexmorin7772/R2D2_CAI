@@ -47,11 +47,12 @@ The following are all defined constants
 //voltage for on and off signals
 #define GOAL_LUX 100
 //how much lux we want the huskylens to receive
-#define MAX_MILLISECONDS 200 //0.4 second
+#define MAX_MILLISECONDS 200 //0.2 second
 //how many milliseconds a huskylens function can run for
 #define BALL_CONFIDENCE 0b1
 #define GOAL_CONFIDENCE 0b10
 #define LINE_CONFIDENCE 0b100
+#define FOCAL_LENGTH 1 //focal length of camera (change once true value is found)
 
 //Create all protothread structs
 pt ptEyelid;
@@ -73,12 +74,14 @@ struct location {
 float ball_size_10 = 120.0;
 float ball_current_distance;
 float ball_current_size;
+float ball_turn_angle;
 location ball_location;
 
 //goal distance variables
 float goal_size_30 = 100.0;
 float goal_current_distance;
 float goal_height;
+float goal_turn_angle;
 location goal_location;
 
 //line tracking variables
@@ -118,6 +121,7 @@ struct object_recognition_results {
   //once someone reads it, it should be set to false so the same information isn't used again
   float object_distance;
   float object_size;
+  float object_turn_angle;
   location object_location;
   //stores the x and y coordinates of the object (do object_location.x or object_location.y to get the x and y values)
 };

@@ -40,6 +40,7 @@ int ball_distance(struct pt* pt) {
         ball_current_size = (static_cast<float>(result.width) + static_cast<float>(result.height)) / 2.0;
         ball_current_distance = (ball_size_10 * 10) / ball_current_size;
         ball_location = {result.xCenter, result.yCenter};
+        ball_turn_angle = angle_finder(result.xCenter);
         Serial.print("Ball distance: ");
         Serial.println(ball_current_distance);
         Serial.print("Location: (");
@@ -52,6 +53,7 @@ int ball_distance(struct pt* pt) {
         ball_results.object_distance = ball_current_distance;
         ball_results.object_size = ball_current_size;
         ball_results.object_location = ball_location;
+        ball_results.object_turn_angle = ball_turn_angle;
         ball_results.is_most_recent = true;
         //change the confidence bit to 1 (confident)
         ipc_comms |= BALL_CONFIDENCE;

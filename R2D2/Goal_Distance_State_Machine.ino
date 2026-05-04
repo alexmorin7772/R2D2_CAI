@@ -40,6 +40,7 @@ int goal_distance(struct pt* pt) {
         goal_height = static_cast<float>(result.height);
         goal_current_distance = (goal_size_30 * 30) / goal_height;
         goal_location = {result.xCenter, result.yCenter};
+        goal_turn_angle = angle_finder(result.xCenter);
         Serial.print("Goal distance: ");
         Serial.println(goal_current_distance);
         Serial.print("Location: (");
@@ -52,6 +53,7 @@ int goal_distance(struct pt* pt) {
         goal_results.object_distance = goal_current_distance;
         goal_results.object_size = goal_height;
         goal_results.object_location = goal_location;
+        goal_results.object_turn_angle = goal_turn_angle;
         goal_results.is_most_recent = true;
         //change the confidence bit to 1 (confident)
         ipc_comms |= GOAL_CONFIDENCE;
