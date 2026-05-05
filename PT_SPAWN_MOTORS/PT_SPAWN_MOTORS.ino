@@ -143,8 +143,16 @@ static int threadMotorWorker(struct pt *pt) {
   static uint32_t moveTime;
   static float fastspeedconst = 500; //purely hypothetical. need to decide
   static float slowspeedconst = 250;
-  static float fastspeedfactor = 1000/340;
-  static float slowspeedfactor = 500/340;
+  static float fastspeedfactor;
+  static float slowspeedfactor;
+  if ((motorData.opState == rRotateL) || (motorData.opState == rRotateR)) {
+    fastspeedfactor = 2;
+    slowspeedfactor = 4;
+  } else {
+    fastspeedfactor = 500/340;
+    slowspeedfactor = 1000/340;
+  }
+
   static float speedconst;
 
 
@@ -191,9 +199,9 @@ static int threadMotorWorker(struct pt *pt) {
     } else if (runMode == rBackward){
       back(motor1, motor2, speedconst);
     } else if (runMode == rRotateL){
-      left(motor1, motor2, 2*speedconst);
-    } else if (runMode == rRotateR){
       right(motor1, motor2, 2*speedconst);
+    } else if (runMode == rRotateR){
+      left(motor1, motor2, 2*speedconst);
     }
 
     Serial.println("moving");
@@ -217,7 +225,7 @@ int threadTimer_MotorWait(struct pt *move)
   PT_BEGIN(move);
 
   PT_WAIT_UNTIL(move, getTicksDuration(TmrStart, millis()) >= TmrDur || (ipc_comms & MASK_OVERRIDE_FLAG)); // One tick is 1 milliseconds
-  
+  //brain needs to send payload then send override so that i am not executing old data
   PT_EXIT(move);
 
   PT_END(move);
@@ -244,19 +252,22 @@ static int threadTestInjector(struct pt *pt) {
       PT_SEM_WAIT(pt, &semMotor);
       PT_SEM_WAIT(pt, &semIPC);
       if (cmd == 'f') { // Test Forward
-        motorData.targetX = 1020.0;
+        motorData.targetX = 340.0;
+        motorData.targetAngle = 0;
         motorData.opState = rForward;
         ipc_comms |= MASK_IPC_Brain_To_Motor;
         Serial.println("FORWARD command");
       } else if (cmd == 'r') { // Test Rotate
         motorData.targetAngle = 90.0;
-        motorData.opState = rRotateL;
+        motorData.targetX = 0;
+        motorData.opState = rRotateR;
         ipc_comms |= MASK_OVERRIDE_FLAG; // You require this to trigger the Manager
         Serial.println(ipc_comms, HEX);
         Serial.println("ROTATE command");
         Serial.println(">>> Injecting OVERRIDE");
       } else if (cmd == 'b') { //Test Backwards
         motorData.targetX = 340.0;
+        motorData.targetAngle = 0;
         motorData.opState = rBackward;
         ipc_comms |= MASK_IPC_Brain_To_Motor;
         Serial.println("BACKWARD command");
