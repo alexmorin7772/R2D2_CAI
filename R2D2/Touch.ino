@@ -38,6 +38,7 @@ ISR(ADC_vect) {
   adcStarted = false;  // Set the flag to indicate a reading is ready
 }
 
+// Important bitflag operations
 boolean Check_Available_Brain_Event (void) {
   // The following returns true for new events only - (i.e. One that has not yet been confirmed-read by Touch)
   if ( (ipc_comms & MASK_IPC_Brain_To_Touch) && !(ipc_comms & MASK_IPC_Touch_Read_Confirmation) ) { // Touch uses Read Confirmation to conclude the last event
@@ -46,6 +47,7 @@ boolean Check_Available_Brain_Event (void) {
   return false;
 }
 
+// Important bitflag operations
 boolean Check_Available_Touch_Event (void) {
   // The following returns true for new events only - (i.e. One that has not yet been confirmed-read by Brain)
   if ( (ipc_comms & MASK_IPC_Touch_To_Brain) && !(ipc_comms & MASK_IPC_Brain_Read_Confirmation) ) { // Main uses Read Confirmation to conclude the last event
@@ -54,10 +56,12 @@ boolean Check_Available_Touch_Event (void) {
   return false;
 }
 
+// Important bitflag operations
 void Post_Touch_Event_to_Brain () {
   ipc_comms |= MASK_IPC_Touch_To_Brain;
 }
 
+// Important bitflag operations
 void Post_Brain_Event_to_Touch () {
   ipc_comms |= MASK_IPC_Brain_To_Touch;
 }

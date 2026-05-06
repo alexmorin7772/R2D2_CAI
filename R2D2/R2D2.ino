@@ -7,6 +7,12 @@
 #include "pt-sem.h"
 #include "touch.h"
 
+// Can Comment/Uncomment the lines using #ifdef and #endif
+// For CAMERA_THREADS that are disabled...
+// Uncomment the following line to enable said lines:
+
+// #define CAMERA_THREADS 
+
 /*
 The following are all defined constants
 #define HIGH 0x1
@@ -180,7 +186,9 @@ void setup() {
   PT_INIT(&solKick); // Touch.ino
   PT_INIT(&ptAlex_test); // Test
   myservo.attach(9);  // attaches the servo on pin 9 to the Servo object
-  while (!huskylens.begin(Wire)) Serial.println("Begin failed!");
+  #ifdef CAMERA_THREADS
+    while (!huskylens.begin(Wire)) Serial.println("Begin failed!");
+  #endif
 
   // Touch.ino setup for code pinmode & ADC
   pinMode(V1, OUTPUT);
@@ -214,9 +222,11 @@ void setup() {
 void loop() {
   //PT_SCHEDULE(eyelidThread(&ptEyelid));
   //PT_SCHEDULE(huskyRead(&ptHuskylens));
-  // *PT_SCHEDULE(ball_distance(&pt_ball_distance));
-  // *PT_SCHEDULE(goal_distance(&pt_goal_distance));
-  // *PT_SCHEDULE(lens_adjustment(&pt_lens_adjustment));
+  #ifdef CAMERA_THREADS
+    PT_SCHEDULE(ball_distance(&pt_ball_distance));
+    PT_SCHEDULE(goal_distance(&pt_goal_distance));
+    PT_SCHEDULE(lens_adjustment(&pt_lens_adjustment));
+  #endif
   PT_SCHEDULE(threadADCRead(&readPos));
   PT_SCHEDULE(threadDisplay(&adcDisp));
   PT_SCHEDULE(threadKick(&solKick));
