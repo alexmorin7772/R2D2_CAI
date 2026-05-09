@@ -48,6 +48,8 @@ int ball_distance(struct pt* pt) {
         Serial.print(", ");
         Serial.print(ball_location.y);
         Serial.println(")");
+        Serial.print("Ball angle: ");
+        Serial.println(ball_turn_angle * RAD_TO_DEG);
         //take control of the results struct
         PT_SEM_WAIT(pt, &sem_ball);
         ball_results.object_distance = ball_current_distance;

@@ -41,13 +41,15 @@ int goal_distance(struct pt* pt) {
         goal_current_distance = (goal_size_30 * 30) / goal_height;
         goal_location = {result.xCenter, result.yCenter};
         goal_turn_angle = angle_finder(result.xCenter);
-        Serial.print("Goal distance: ");
+        /*Serial.print("Goal distance: ");
         Serial.println(goal_current_distance);
         Serial.print("Location: (");
         Serial.print(goal_location.x);
         Serial.print(", ");
         Serial.print(goal_location.y);
-        Serial.println(")");
+        Serial.println(")");*/
+        Serial.print("Goal angle: ");
+        Serial.println(goal_turn_angle * RAD_TO_DEG);
         //take control of the results struct
         PT_SEM_WAIT(pt, &sem_goal);
         goal_results.object_distance = goal_current_distance;
