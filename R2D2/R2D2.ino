@@ -52,7 +52,7 @@ The following are all defined constants
 #define BALL_CONFIDENCE 0b1
 #define GOAL_CONFIDENCE 0b10
 #define LINE_CONFIDENCE 0b100
-#define FOCAL_LENGTH 1 //focal length of camera (change once true value is found)
+#define FOCAL_LENGTH 234 //focal length of camera
 
 //Create all protothread structs
 pt ptEyelid;
