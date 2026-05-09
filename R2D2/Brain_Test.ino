@@ -29,7 +29,7 @@ Motor motor2 = Motor(BIN1, BIN2, PWMB, offsetB, STBY);
 
 // Inter-Process Communication (IPC) variables
 volatile uint32_t ipc_comms = 0; 
-static struct pt_sem semIPC;      // Protects ipc_comms
+static struct pt_sem sem_ipc;      // Protects ipc_comms
 
 // Motor Data Payload
 struct MotorData {
@@ -178,7 +178,7 @@ void setup() {
   Serial.begin(115200);
   PT_INIT(&ptBrain);
   PT_INIT(&ptKick);
-  PT_SEM_INIT(&semIPC, 1);
+  PT_SEM_INIT(&sem_ipc, 1);
   PT_SEM_INIT(&semMotor, 1);
   pinMode(LED_BUILTIN, OUTPUT);
   digitalWrite(LED_BUILTIN, LOW);
