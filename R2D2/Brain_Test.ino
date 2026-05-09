@@ -64,7 +64,7 @@ static uint32_t TmrDur;
 static uint32_t StartTime;
 
 pt ptBrain;
-pt ptKick;
+pt ptActuator;
 
 enum Modes {
     rForward = 0,
@@ -80,11 +80,12 @@ enum Modes {
 
 // States for simulating for Main protothread's logic/brain execution.
 enum brainState {
-  msInit = 0,   // State to do one-time initialization or full restart of the state machine
+  msKick = 0,   // State to do one-time initialization or full restart of the state machine
   msSearch,  //Waits for signal from bit flags and gets data from structs
   msAlign,
   msApproach,
-  msKick,
+  msReverse,
+  msScore
 } brainState;
 
 #define MASK_IPC_Brain_Read_Confirmation   0x00040000 // same as 0b 0000 0000 0000 0100 0000 0000 0000 0000 - Same as Touch confirming that it read from Brain
@@ -101,96 +102,76 @@ enum brainState {
 #define MASK_OVERRIDE_FLAG 0x00002000
 #define MASK_SPEED 0x00004000 //1 = fast, 0 = slow
 
-static int threadBrain(struct pt* pt) {
-  PT_BEGIN(pt);
-  
-  brainState = msSearch;
-
-  for(;;) {
-    // 1. Wait for fresh data from the camera
-    PT_WAIT_UNTIL(pt, cameraData.is_most_recent == true);
-    
-    // 2. Logic: Decide what to do based on camera values
-    PT_SEM_WAIT(pt, &semMotor);
-    
-    if (cameraData.object_size <= 0) {
-      brainState = msSearch;
-    } 
-    else if (abs(cameraData.object_location.x - CENTER_X) > X_DEADZONE) {
-      brainState = msAlign;
-    } 
-    else if (cameraData.object_distance > KICK_DISTANCE) {
-      brainState = msApproach;
-    } 
-    else {
-      brainState = msKick;
-    }
-
-    // 3. Execution: Command the Motors or the Kicker
-    // Check if the motor is already doing something (unless we need to override)
-    bool isMoving = (ipc_comms & MASK_MOTOR_MOVING);
-
-    switch (brainState) {
-      case msSearch:
-        if (!isMoving) {
-          motorData.opState = rRotateR;
-          motorData.targetAngle = cameraData.object_turn_angle; //random numbers
-          ipc_comms |= MASK_IPC_Brain_To_Motor;
+int threadBrain(struct pt *pt) {
+    PT_BEGIN(pt);
+    for(;;) {
+        if (hasBall && (camera.distance < KICK_DISTANCE) && (abs(cameraData.object_location.x - CENTER_X) < X_DEADZONE)) {
+            // Ball in contact sensor and close enough → kick immediately
+            brainState = msKick;
         }
-        break;
-
-      case msAlign:
-        // random OVERRIDE case to test
-        motorData.targetAngle = cameraData.object_turn_angle; //random numbers
-        motorData.opState = (cameraData.object_location.x < CENTER_X) ? rRotateL : rRotateR;
-        ipc_comms |= MASK_OVERRIDE_FLAG; 
-        break;
-
-      case msApproach:
-        if (!isMoving) {
-          motorData.opState = rForward;
-          motorData.targetX = cameraData.object_distance;
-          ipc_comms |= MASK_IPC_Brain_To_Motor;
+        else if (!hasBall) {
+            // ── No ball possessed: search or acquire
+            if (cameraData.object_size <= 0) {
+                // No ball in frame at all → spin to search
+                brainState = msSearch;
+            }
+            else if (abs(cameraData.object_location.x - CENTER_X) > X_DEADZONE) { //WHAT IS X_DEADZONE :(
+                // Ball visible but off-center → rotate to align
+                brainState = msAlign;
+            }
+            else if (cameraData.object_distance > KICK_DISTANCE) {
+                // Ball aligned but too far → drive forward
+                brainState = msApproach;
+            }
+            else if ((abs(cameraData.object_location.x - CENTER_X) < 1) && (cameraData.object_distance < KICK_DISTANCE)) { //1 not determined need to fix
+                // Ball aligned and close → kick/collect
+                brainState = msKick;
+            }
         }
-        break;
-
-      case msKick:
-        // Stop the motors and trigger the kick flag
-        brake(motor1, motor2);
-        bKick_Start = true; // Signals the threadKick below
-        break;
+        else {
+            // ── Ball possessed: score ─
+            if (!goalData.goal_visible) {
+                // Can't see goal → turn 180° to find it
+                brainState = msSearch;
+            }
+            else { //goal visible
+                if ((abs(cameraData.object_location.x - CENTER_X) > X_DEADZONE)) { //not aligned
+                    brainState = msAlign;
+                } else if ((abs(cameraData.object_location.x - CENTER_X) < X_DEADZONE) && (cameraData.object_distance > KICK_DISTANCE)) {
+                    brainState = msApproach;
+                }
+            }
+        }
+        PT_SLEEP(pt, 1);  // Yield after each decision cycle
     }
-
-    cameraData.is_most_recent = false; // "Consume" the frame
-    PT_SEM_SIGNAL(pt, &semMotor);
-
-    PT_SLEEP(pt, 1);
-  }
-  PT_END(pt);
+    PT_END(pt);
 }
 
-// --- Kicker Thread (based off of alex's thread) ---
-static int threadKick(struct pt* pt) {
-  PT_BEGIN(pt);
-
-  for(;;) {
-    // Wait until the Brain sets bKick_Start to true
-    PT_WAIT_UNTIL(pt, bKick_Start);
-    
-    Serial.println(">>> KICKING <<<");
-    PORTB |= (1 << 4); // Solenoid on
-
-    StartTime = millis();
-    PT_WAIT_UNTIL(pt, (millis() - StartTime) >= 200); //random numbers kinda
-    
-    PORTB &= ~(1 << 4); // Solenoid off
-    bKick_Start = false; // Reset flag
-    
-    StartTime = millis();
-    PT_WAIT_UNTIL(pt, (millis() - StartTime) >= 500); //safety cooldowning?
-  }
-
-  PT_END(pt);
+// ─── Actuator Thread: State Execution ───
+int threadActuator(struct pt *pt) {
+    PT_BEGIN(pt);
+    for(;;) {
+        if (brainState == msKick) {
+            //activate solenoid
+        } else if (brainState == msSearch) {
+            PT_SEM_WAIT(pt, &semMotor);
+            MotorData.opState = rRotateL;
+            MotorData.targetAngle = 90.0; //or we could turn 120?
+            PT_SEM_SIGNAL(pt, &semMotor);
+        } else if (brainState == msAlign) {
+            PT_SEM_WAIT(pt, &semMotor);
+            MotorData.opState = rRotateL;
+            MotorData.targetAngle = object_recognition_results.object_turn_angle; //agree on this
+            PT_SEM_SIGNAL(pt, &semMotor);
+        } else if (brainState == msApproach) {
+            PT_SEM_WAIT(pt, &semMotor);
+            MotorData.opState = rForward;
+            MotorData.targetX = object_recognition_results.object_distance;
+            PT_SEM_SIGNAL(pt, &semMotor);
+        }
+        PT_SLEEP(pt, 1);
+    }
+    PT_END(pt);
 }
 
 void setup() {
