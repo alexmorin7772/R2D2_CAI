@@ -29,6 +29,7 @@ int goal_distance(struct pt* pt) {
         //change the confidence bit to 0 (not confident)
         ipc_comms &= ~GOAL_CONFIDENCE;
         goal_results.is_most_recent = false;
+        goal_results.object_found = false;
         PT_SEM_SIGNAL(pt, &sem_goal);
         //went over time limit, so go to finish
         goal_state = finish;
@@ -57,6 +58,7 @@ int goal_distance(struct pt* pt) {
         goal_results.object_location = goal_location;
         goal_results.object_turn_angle = goal_turn_angle;
         goal_results.is_most_recent = true;
+        goal_results.object_found = true;
         //change the confidence bit to 1 (confident)
         ipc_comms |= GOAL_CONFIDENCE;
         //allow other threads to read the results struct
@@ -77,6 +79,7 @@ int goal_distance(struct pt* pt) {
       //change the confidence bit to 0 (not confident)
       ipc_comms &= ~GOAL_CONFIDENCE;
       goal_results.is_most_recent = false;
+      goal_results.object_found = false;
       PT_SEM_SIGNAL(pt, &sem_goal);
       //goal_state doesn't match anything
       goal_state = initialization;

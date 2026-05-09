@@ -29,6 +29,7 @@ int ball_distance(struct pt* pt) {
         //change the confidence bit to 0 (not confident)
         ipc_comms &= ~BALL_CONFIDENCE;
         ball_results.is_most_recent = false;
+        ball_results.object_found = false;
         PT_SEM_SIGNAL(pt, &sem_ball);
         //went over time limit, so go to finish
         ball_state = finish;
@@ -57,6 +58,7 @@ int ball_distance(struct pt* pt) {
         ball_results.object_location = ball_location;
         ball_results.object_turn_angle = ball_turn_angle;
         ball_results.is_most_recent = true;
+        ball_results.object_found = true;
         //change the confidence bit to 1 (confident)
         ipc_comms |= BALL_CONFIDENCE;
         //allow other threads to read the results struct
@@ -77,6 +79,7 @@ int ball_distance(struct pt* pt) {
       //change the confidence bit to 0 (not confident)
       ipc_comms &= ~BALL_CONFIDENCE;
       ball_results.is_most_recent = false;
+      ball_results.object_found = false;
       PT_SEM_SIGNAL(pt, &sem_ball);
       //ball_state doesn't match anything
       ball_state = initialization;
