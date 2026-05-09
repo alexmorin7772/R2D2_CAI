@@ -44,7 +44,7 @@ struct object_recognition_results {
   //once someone reads it, it should be set to false so the same information isn't used again
   float object_distance;
   float object_size;
-  float object_turn_angle;
+  float object_turn_angle; //Right is positive, Left is negative
   location object_location;
   //stores the x and y coordinates of the object (do object_location.x or object_location.y to get the x and y values)
 };
@@ -62,6 +62,7 @@ Modes runMode;
 static uint32_t TmrStart;
 static uint32_t TmrDur;
 static uint32_t StartTime;
+float degA;
 
 pt ptBrain;
 pt ptActuator;
@@ -106,30 +107,30 @@ int threadBrain(struct pt *pt) {
     PT_BEGIN(pt);
     for(;;) {
         if (hasBall && (camera.distance < KICK_DISTANCE) && (abs(cameraData.object_location.x - CENTER_X) < X_DEADZONE)) {
-            // Ball in contact sensor and close enough → kick immediately
+            // Ball in contact sensor and close enough = kick immediately
             brainState = msKick;
         }
         else if (!hasBall) {
-            // ── No ball possessed: search or acquire
+            //No ball possessed: search or acquire
             if (cameraData.object_size <= 0) {
-                // No ball in frame at all → spin to search
+                // No ball in frame at all = spin to search
                 brainState = msSearch;
             }
             else if (abs(cameraData.object_location.x - CENTER_X) > X_DEADZONE) { //WHAT IS X_DEADZONE :(
-                // Ball visible but off-center → rotate to align
+                // Ball visible but off-center = rotate to align
                 brainState = msAlign;
             }
             else if (cameraData.object_distance > KICK_DISTANCE) {
-                // Ball aligned but too far → drive forward
+                // Ball aligned but too far = drive forward
                 brainState = msApproach;
             }
             else if ((abs(cameraData.object_location.x - CENTER_X) < 1) && (cameraData.object_distance < KICK_DISTANCE)) { //1 not determined need to fix
-                // Ball aligned and close → kick/collect
+                // Ball aligned and close = kick/collect
                 brainState = msKick;
             }
         }
         else {
-            // ── Ball possessed: score ─
+            //Ball possessed: score
             if (!goalData.goal_visible) {
                 // Can't see goal → turn 180° to find it
                 brainState = msSearch;
@@ -147,7 +148,7 @@ int threadBrain(struct pt *pt) {
     PT_END(pt);
 }
 
-// ─── Actuator Thread: State Execution ───
+//Actuator Thread: State Execution
 int threadActuator(struct pt *pt) {
     PT_BEGIN(pt);
     for(;;) {
@@ -159,13 +160,19 @@ int threadActuator(struct pt *pt) {
             MotorData.targetAngle = 90.0; //or we could turn 120?
             PT_SEM_SIGNAL(pt, &semMotor);
         } else if (brainState == msAlign) {
-            PT_SEM_WAIT(pt, &semMotor);
-            MotorData.opState = rRotateL;
-            MotorData.targetAngle = object_recognition_results.object_turn_angle; //agree on this
+            PT_SEM_WAIT(pt, &semMotor) {
+            degA = object_recognition_results.object_turn_angle * RAD_TO_DEG; //agree on this (done 5/9)
+            if (degA < 0){
+                MotorData.opState = rRotateL;
+            } else {
+                MotorData.opState = rRotateR;
+            }
+            MotorData.targetAngle = abs(degA); 
             PT_SEM_SIGNAL(pt, &semMotor);
         } else if (brainState == msApproach) {
             PT_SEM_WAIT(pt, &semMotor);
             MotorData.opState = rForward;
+            object_distance = object_distance * 10;
             MotorData.targetX = object_recognition_results.object_distance;
             PT_SEM_SIGNAL(pt, &semMotor);
         }
