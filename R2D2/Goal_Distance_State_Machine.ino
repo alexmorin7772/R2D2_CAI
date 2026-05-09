@@ -48,6 +48,8 @@ int goal_distance(struct pt* pt) {
         Serial.print(", ");
         Serial.print(goal_location.y);
         Serial.println(")");
+        Serial.print("Goal angle: ");
+        Serial.println(goal_turn_angle * RAD_TO_DEG);
         //take control of the results struct
         PT_SEM_WAIT(pt, &sem_goal);
         goal_results.object_distance = goal_current_distance;
