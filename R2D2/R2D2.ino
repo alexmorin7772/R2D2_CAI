@@ -35,6 +35,8 @@ The following are all defined constants
 //Define all macros
 #define BALL_DIAMETER 4.27
 //ball diameter in cm
+#define BALL_SIZE_10 120.0
+#define GOAL_SIZE_30 100.0
 #define OUT1 -1
 #define OUT2 -1
 //the OUT1 and OUT2 pins refer to analog pins and we read them to figure out whether to start or stop
@@ -71,17 +73,19 @@ struct location {
 };
 
 //ball distance variables
-float ball_size_10 = 120.0;
 float ball_current_distance;
 float ball_current_size;
 float ball_turn_angle;
+int ball_leftmost_x;
+int ball_rightmost_x;
 location ball_location;
 
 //goal distance variables
-float goal_size_30 = 100.0;
 float goal_current_distance;
 float goal_height;
 float goal_turn_angle;
+int goal_leftmost_x;
+int goal_rightmost_x;
 location goal_location;
 
 //line tracking variables
@@ -122,6 +126,7 @@ struct object_recognition_results {
   float object_distance;
   float object_size;
   float object_turn_angle;
+  int leftmost_x, rightmost_x;
   bool is_most_recent = false; //this will be changed to true once the Huskylens writes to it
   //once someone reads it, it should be set to false so the same information isn't used again
   bool object_found = false;
