@@ -1,7 +1,35 @@
 /*
 touch.h, created by Alex
-Header file reference for bit flags & bit masks in "Touch.ino" in the R2D2_CAI Repository (git).
+Header file for "Touch.ino" in the R2D2_CAI Repository (git).
+Setup code for declarations
+Including bit flags & bit masks to use
+*/
 
+#ifndef TOUCH_AND_KICK
+#define TOUCH_AND_KICK
+
+#define V1          2 // changed from D4 to D2 (12-20-2025)
+#define V2          A0
+#define V_wiper     A1
+#define V_ref_neg   5
+#define V_LOW       7
+
+typedef enum READ_STATE {
+  RS_INIT = 0,
+  RS_ADC,
+  RS_WAIT
+} eReadState_t;
+
+typedef enum DISP_STATE {
+  DS_INIT = 0,
+  DS_CHECK,
+  DS_PRINT,
+  DS_PRESENT,
+  DS_ABSENT,
+  DS_WAIT
+} eDispState_t;
+
+/*
 Section C of ipc_comms control variable: maps as follows (least significant bit right to left)
 Written in hexadecimal: starts with "0x" instead of "0b"
 
@@ -44,3 +72,5 @@ void Post_Touch_Event_to_Brain () {
 }
 
 */
+
+#endif

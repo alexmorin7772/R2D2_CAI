@@ -14,7 +14,18 @@ C) Using an extra function "getTicksDuration" for millis() time calculations out
 #include "touch.h"
 #include "Utils.h"
 
+volatile pt solKick;
+volatile pt ptAlex_test;
+volatile pt readPos, adcDisp;
+
+int offset = 0;
+
+// Touch.ino declaration code
 struct pt_sem semTouch;
+// Define a global variable to store the ADC reading
+volatile int A_pos = 0;
+// Flag to indicate if a reading is available
+volatile bool adcStarted = false;
 
 static volatile float V_datapoints[4];
 
@@ -31,6 +42,36 @@ static volatile unsigned long prevTime4 = 0;
 static volatile float V_value;
 static volatile float V_average;
 static volatile boolean bKick_Again = false;
+
+void touchSetup(void) {
+  PT_INIT(&readPos); // Touch.ino
+  PT_INIT(&adcDisp); // Touch.ino
+  PT_SEM_INIT(&semTouch, 1); // Touch.ino
+  PT_INIT(&solKick); // Touch.ino
+  PT_INIT(&ptAlex_test); // Test
+
+  // Touch.ino setup for code pinmode & ADC
+  pinMode(V1, OUTPUT);
+  pinMode(V2, OUTPUT);
+  pinMode(V_ref_neg, INPUT);
+  pinMode(V_wiper, OUTPUT);
+  pinMode(SOLENOID_PIN, OUTPUT);
+  digitalWrite(SOLENOID_PIN, LOW);  // Initialize de-energized
+  pinMode(LED_BUILTIN, OUTPUT); // Touch.ino for debug purposes, open to change!
+  digitalWrite(LED_BUILTIN, LOW); // Using LED_BUILTIN from pinmode
+
+  pinMode(V_LOW, OUTPUT);
+  digitalWrite(V_LOW, LOW);
+
+  cli(); // Disable global interrupts until required
+
+  // Configure ADC settings
+  ADCSRA = bit(ADEN);  // Enable ADC
+  ADCSRA |= bit(ADPS0) | bit(ADPS1) | bit(ADPS2); // Set ADC clock prescaler
+  ADMUX = bit(REFS0) | 1; // Set voltage reference and select ADC channel
+  ADCSRA |= bit(ADIE); // Enable ADC interrupt
+  // **************************************
+}
 
 // ADC complete interrupt service routine
 ISR(ADC_vect) {
@@ -85,17 +126,13 @@ void readSensorPos(void) {
   // digitalWrite(V2, HIGH);
 }
 
-static volatile enum {
-  RS_INIT = 0,
-  RS_ADC,
-  RS_WAIT
-} eReadState = RS_INIT;
-
 static volatile int i = 0;
 
 static int threadADCRead(struct pt* pos)
 {
   PT_BEGIN(pos);
+
+  eReadState_t eReadState = RS_INIT;
 
   if (eReadState == RS_INIT) {
     prevTime4 = millis();
@@ -135,18 +172,11 @@ static int threadADCRead(struct pt* pos)
   PT_END(pos);
 }
 
-static volatile enum {
-  DS_INIT = 0,
-  DS_CHECK,
-  DS_PRINT,
-  DS_PRESENT,
-  DS_ABSENT,
-  DS_WAIT
-} eDispState = DS_INIT;
-
 static int threadDisplay(struct pt* disp)
 {
   PT_BEGIN(disp);
+
+  eDispState_t eDispState = DS_INIT;
 
   // for (;;)
   // {

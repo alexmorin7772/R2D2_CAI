@@ -6,216 +6,44 @@
 #include <Servo.h>
 #include "pt-sem.h"
 #include "touch.h"
-
-// Can Comment/Uncomment the lines using #ifdef and #endif
-// For CAMERA_THREADS that are disabled...
-// Uncomment the following line to enable said lines:
-
-// #define CAMERA_THREADS 
-
 /*
-The following are all defined constants
-#define HIGH 0x1
-#define LOW  0x0
-
-#define INPUT 0x0
-#define OUTPUT 0x1
-#define INPUT_PULLUP 0x2
-
-#define PI 3.1415926535897932384626433832795
-#define HALF_PI 1.5707963267948966192313216916398
-#define TWO_PI 6.283185307179586476925286766559
-#define DEG_TO_RAD 0.017453292519943295769236907684886
-#define RAD_TO_DEG 57.295779513082320876798154814105
-#define EULER 2.718281828459045235360287471352
-
-#define SERIAL  0x0
-#define DISPLAY 0x1
-
-#define LSBFIRST 0
-#define MSBFIRST 1
-
-#define CHANGE 1
-#define FALLING 2
-#define RISING 3
+"R2D2.ino" by team R2D2_CAI in the git repsitory "R2D2_CAI"
+To create a "robot" that can "play soccer"
+Can Comment/Uncomment lines using #ifdef and #endif
 */
 
-//Define all macros
-#define BALL_DIAMETER 4.27
-//ball diameter in cm
-#define OUT1 -1
-#define OUT2 -1
-//the OUT1 and OUT2 pins refer to analog pins and we read them to figure out whether to start or stop
-//remember to change the OUT1 and OUT2 pins when we decide on it
-#define ANALOG_RANGE 3.3
-#define ANALOG_MAX 1023.0
-//range of analog voltages and the maximum possible analog reading
-#define ON 3.3
-#define OFF 0.0
-//voltage for on and off signals
-#define GOAL_LUX 100
-//how much lux we want the huskylens to receive
-#define MAX_MILLISECONDS 400 //0.4 second
-//how many milliseconds a huskylens function can run for
+// #define CAMERA_THREADS // For CAMERA_THREADS that are disabled: Uncomment to re-enable
 
-//Create all protothread structs
-pt ptEyelid;
-pt ptHuskylens;
-pt pt_ball_distance;
-pt pt_goal_distance;
-pt pt_lens_adjustment;
-pt solKick;
-pt ptAlex_test;
+extern volatile pt solKick; // Touch.ino declarations
+extern volatile pt ptAlex_test; // Touch.ino declarations
+extern volatile pt readPos, adcDisp; // Touch.ino declarations
 
-//Huskylens variables
-HUSKYLENS huskylens;
-SoftwareSerial serial(10, 11);
-
-struct location {
-  int x, y;
-};
-
-//ball distance variables
-float ball_size_10 = 120.0;
-float ball_current_distance;
-float ball_current_size;
-bool ball_success;
-location ball_location;
-
-//goal distance variables
-float goal_size_30 = 100.0;
-float goal_current_distance;
-float goal_height;
-bool goal_success;
-location goal_location;
-
-/*
-Coordinate system
-(0, 0)                 (320, 0)
-
-           (160, 120)
-
-(0, 240)               (320, 240)
-*/
-
-//object recognition state machine
-typedef enum object_recognition_state {
-  start,
-  initialization,
-  test_for_object,
-  check_time,
-  evaluate_distance,
-  finish
-};
-
-//do NOT write to any of these variables except for is_most_recent
-typedef struct object_recognition_results {
-  bool is_most_recent = false; //this will be changed to true once the Huskylens writes to it
-  //once someone reads it, it should be set to false so the same information isn't used again
-  float object_distance;
-  float object_size;
-  location object_location;
-  //stores the x and y coordinates of the ball (do object_location.x or object_location.y to get the x and y values)
-};
-
-//variables to test semaphores and reading from a shared 32-bit variable
-pt_sem sem_ball, sem_goal;
 uint32_t ipc_comms = 0;
-
-//Initialize functions
-int ball_distance(struct pt* pt);
-int eyelidThread(struct pt* pt);
-int goal_distance(struct pt* pt);
-
-//state machine variables
-int servo_position = 0;
-
-Servo myservo;  // create Servo object to control a servo
-
-int pos = 0;  // variable to store the servo position
-
-typedef enum lens_adjustment_state {
-  lens_start,
-  read_lux,
-  calculate_angle,
-  move_servo,
-  lens_finish
-};
-
-int lux = 0;
-int actual_lux = 0;
-int angle = 0;
 
 bool started = false;
 //boolean for the start/stop signal
-
-// Touch.ino declaration code
-extern struct pt_sem semTouch;
-// Define a global variable to store the ADC reading
-volatile int A_pos = 0;
-// Flag to indicate if a reading is available
-volatile bool adcStarted = false;
-
-int offset = 0;
-#define V1          2 // changed from D4 to D2 (12-20-2025)
-#define V2          A0
-#define V_wiper     A1
-#define V_ref_neg   5
-#define V_LOW       7
-
-pt readPos, adcDisp;
-// **************************
 
 #define SOLENOID_PIN 12
 
 void setup() {
   Serial.begin(115200);
-  serial.begin(9600);
+  // while (!Serial && (millis() < 5000)); // Wait 5 seconds
   Wire.begin();
-  TSL2561.init();
-  PT_INIT(&ptEyelid);
-  PT_INIT(&ptHuskylens);
-  PT_INIT(&pt_ball_distance);
-  PT_INIT(&pt_goal_distance);
-  PT_INIT(&pt_lens_adjustment);
-  PT_SEM_INIT(&sem_ball, 0);
-  PT_SEM_INIT(&sem_goal, 0);
-  PT_INIT(&readPos); // Touch.ino
-  PT_INIT(&adcDisp); // Touch.ino
-  PT_SEM_INIT(&semTouch, 1); // Touch.ino
-  PT_INIT(&solKick); // Touch.ino
-  PT_INIT(&ptAlex_test); // Test
-  myservo.attach(9);  // attaches the servo on pin 9 to the Servo object
-  #ifdef CAMERA_THREADS
-    while (!huskylens.begin(Wire)) Serial.println("Begin failed!");
-  #endif
-
-  // Touch.ino setup for code pinmode & ADC
-  pinMode(V1, OUTPUT);
-  pinMode(V2, OUTPUT);
-  pinMode(V_ref_neg, INPUT);
-  pinMode(V_wiper, OUTPUT);
-  pinMode(SOLENOID_PIN, OUTPUT);
-  digitalWrite(SOLENOID_PIN, LOW);  // Initialize de-energized
-  pinMode(LED_BUILTIN, OUTPUT); // Touch.ino for debug purposes, open to change!
-  digitalWrite(LED_BUILTIN, LOW); // Using LED_BUILTIN from pinmode
-
-  pinMode(V_LOW, OUTPUT);
-  digitalWrite(V_LOW, LOW);
-
-  cli(); // Disable global interrupts until required
-
-  // Configure ADC settings
-  ADCSRA = bit(ADEN);  // Enable ADC
-  ADCSRA |= bit(ADPS0) | bit(ADPS1) | bit(ADPS2); // Set ADC clock prescaler
-  ADMUX = bit(REFS0) | 1; // Set voltage reference and select ADC channel
-  ADCSRA |= bit(ADIE); // Enable ADC interrupt
-  // **************************************
+  Serial.println("Serial Start");
+  
+  // setupVision();
+  //   Serial.println("Vision Start");
+  // setupLightSensor();
+  //   Serial.println("Light Start");
+  touchSetup();
+    Serial.println("Touch Start");
+  
+  // Touch.ino declarations moved to touch.h
 
   // huskyAlgorithm();   // Huskylens - Vision.ino
   // motorSetup();       // Motor Driver - 
   // groveDLSsetup();    // Light Sensor - 
-  // touchSetup();       // Touch Sensor - 
+  // touchSetup();       // Touch Sensor - Touch.ino
   // eyelidSetup();      // Servo / Iris - Eyelid.ino
 }
 
