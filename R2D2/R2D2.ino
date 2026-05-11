@@ -92,7 +92,7 @@ location line_origin, line_target;
 Coordinate system
 (0, 0)                 (320, 0)
 
-           (160, 120)
+           (160, 120)    
 
 (0, 240)               (320, 240)
 */
