@@ -5,6 +5,7 @@
 #include <Wire.h>
 #include <Digital_Light_TSL2561.h>
 #include <Servo.h>
+#include <SparkFun_TB6612.h>
 
 /*
 The following are all defined constants
@@ -64,6 +65,9 @@ pt pt_ball_distance;
 pt pt_goal_distance;
 pt pt_line_tracking;
 pt pt_lens_adjustment;
+pt ptBrain;
+pt ptActuator;
+
 
 //Huskylens variables
 HUSKYLENS huskylens;
@@ -139,7 +143,7 @@ struct line_tracking_results {
 };
 
 //variables to test semaphores and reading from a shared 32-bit variable
-pt_sem sem_ball, sem_goal, sem_line;
+pt_sem sem_ball, sem_goal, sem_line, sem_ipc, sem_motor;
 uint32_t ipc_comms = 0;
 
 //state machine variables
@@ -175,9 +179,13 @@ void setup() {
   PT_INIT(&pt_goal_distance);
   PT_INIT(&pt_line_tracking);
   PT_INIT(&pt_lens_adjustment);
+  PT_INIT(&ptBrain);
+  PT_INIT(&ptActuator);
   PT_SEM_INIT(&sem_ball, 1);
   PT_SEM_INIT(&sem_goal, 1);
   PT_SEM_INIT(&sem_line, 1);
+  PT_SEM_INIT(&sem_ipc, 1);
+  PT_SEM_INIT(&sem_motor, 1);
   myservo.attach(9);  // attaches the servo on pin 9 to the Servo object
   while (!huskylens.begin(Wire)) Serial.println("Begin failed!");
   // huskyAlgorithm();   // Huskylens - Vision.ino
@@ -191,7 +199,9 @@ void loop() {
   //PT_SCHEDULE(eyelidThread(&ptEyelid));
   //PT_SCHEDULE(huskyRead(&ptHuskylens));
   PT_SCHEDULE(ball_distance(&pt_ball_distance));
-  PT_SCHEDULE(goal_distance(&pt_goal_distance));
-  PT_SCHEDULE(line_tracking(&pt_line_tracking));
-  PT_SCHEDULE(lens_adjustment(&pt_lens_adjustment));
+  //PT_SCHEDULE(goal_distance(&pt_goal_distance));
+  //PT_SCHEDULE(line_tracking(&pt_line_tracking));
+  //PT_SCHEDULE(lens_adjustment(&pt_lens_adjustment));
+  PT_SCHEDULE(threadBrain(&ptBrain));
+  PT_SCHEDULE(threadActuator(&ptActuator));
 }
