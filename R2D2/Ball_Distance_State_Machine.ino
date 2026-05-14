@@ -1,5 +1,5 @@
 object_recognition_state ball_state = start;
-object_recognition_results ball_results;
+//object_recognition_results ball_results; I DECLARED IT IN R2D2 instead
 unsigned long ball_start_millis;
 
 int ball_distance(struct pt* pt) {

@@ -136,6 +136,8 @@ struct object_recognition_results {
   //once someone reads it, it should be set to false so the same information isn't used again
   bool object_found = false;
 };
+object_recognition_results ball_results;
+object_recognition_results goal_results;
 
 struct line_tracking_results {
   location origin, target;

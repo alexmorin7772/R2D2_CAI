@@ -1,4 +1,5 @@
 #include "defines.h"
+#include "motorStruct.h"
 
 #define AIN1 2
 #define BIN1 7
@@ -20,13 +21,6 @@ const int offsetB = 1;
 Motor motor1 = Motor(AIN1, AIN2, PWMA, offsetA, STBY);
 Motor motor2 = Motor(BIN1, BIN2, PWMB, offsetB, STBY);
 
-// Motor Data Payload
-struct MotorData {
-  float targetX;
-  float targetAngle;
-  runMode_t opState; //enum state, so it will be a number
-} motorData;
-
 
 float degA;
 const int CENTER_X = 160; 
@@ -34,6 +28,9 @@ const int OFFSET_X = 40; //random numbers
 bool bBetweenPosts = false;
 bool bCenteredOnGoal = false;
 bool bGoalAligned = false;
+bool bPresent = false;
+float temp_ball_distance;
+float temp_goal_distance;
 
 runMode_t runMode;
 
@@ -41,10 +38,10 @@ runMode_t runMode;
 enum brainState {
   msKick = 0,   // State to do one-time initialization or full restart of the state machine
   msSearch,  //Waits for signal from bit flags and gets data from structs
-  msAlign,
-  msApproach,
-  msReverse,
-  msScore
+  msGoalAlign,
+  msBallAlign,
+  msGoalApproach,
+  msBallApproach
 } brainState;
 
 #define MASK_IPC_Brain_Read_Confirmation   0x00040000 // same as 0b 0000 0000 0000 0100 0000 0000 0000 0000 - Same as Touch confirming that it read from Brain
@@ -78,7 +75,7 @@ int threadBrain(struct pt *pt) {
             brainState = msSearch;
         } 
         else if ((!ball_results.object_found) && (bPresent) && (goal_results.object_found)) {
-            brainState = msGoalAlign
+            brainState = msGoalAlign;
         }
         else if ((!ball_results.object_found) && (bPresent) && (!goal_results.object_found)) {
             brainState = msSearch;
@@ -106,48 +103,49 @@ int threadActuator(struct pt *pt) {
     PT_BEGIN(pt);
     for(;;) {
         if (brainState == msKick) {
+            serial.println("kicking...");
             //activate solenoid
         } 
         else if (brainState == msSearch) {
             PT_SEM_WAIT(pt, &sem_motor);
-            MotorData.opState = rRotateL;
-            MotorData.targetAngle = 68.0; //camera can only see 68 ig oof
+            motorData.opState = rRotateL;
+            motorData.targetAngle = 68.0; //camera can only see 68 ig oof
             PT_SEM_SIGNAL(pt, &sem_motor);
         } 
         else if (brainState == msBallAlign) {
             PT_SEM_WAIT(pt, &sem_motor);
             degA = ball_results.object_turn_angle * RAD_TO_DEG; //agree on this (done 5/9)
             if (degA < 0){
-                MotorData.opState = rRotateL;
+                motorData.opState = rRotateL;
             } else {
-                MotorData.opState = rRotateR;
+                motorData.opState = rRotateR;
             }
-            MotorData.targetAngle = abs(degA); 
+            motorData.targetAngle = abs(degA); 
             PT_SEM_SIGNAL(pt, &sem_motor);
         } 
         else if(brainState == msGoalAlign) {
             PT_SEM_WAIT(pt, &sem_motor);
             degA = goal_results.object_turn_angle * RAD_TO_DEG; //agree on this (done 5/9)
             if (degA < 0){
-                MotorData.opState = rRotateL;
+                motorData.opState = rRotateL;
             } else {
-                MotorData.opState = rRotateR;
+                motorData.opState = rRotateR;
             }
-            MotorData.targetAngle = abs(degA); 
+            motorData.targetAngle = abs(degA); 
             PT_SEM_SIGNAL(pt, &sem_motor);
         }
         else if (brainState == msBallApproach) {
             PT_SEM_WAIT(pt, &sem_motor);
-            MotorData.opState = rForward;
-            ball_distance = ball_results.object_distance * 10;
-            MotorData.targetX = ball_distance;
+            motorData.opState = rForward;
+            temp_ball_distance = ball_results.object_distance * 10.0;
+            motorData.targetX = temp_ball_distance;
             PT_SEM_SIGNAL(pt, &sem_motor);
         }
         else if (brainState == msGoalApproach) {
             PT_SEM_WAIT(pt, &sem_motor);
-            MotorData.opState = rForward;
-            goal_distance = goal_results.object_distance * 10;
-            MotorData.targetX = goal_distance;
+            motorData.opState = rForward;
+            temp_goal_distance = goal_results.object_distance * 10.0;
+            motorData.targetX = temp_goal_distance;
             PT_SEM_SIGNAL(pt, &sem_motor);
         }
         PT_SLEEP(pt, 1);

@@ -1,5 +1,5 @@
 object_recognition_state goal_state = start;
-object_recognition_results goal_results;
+//object_recognition_results goal_results;
 unsigned long goal_start_millis;
 
 int goal_distance(struct pt* pt) {
