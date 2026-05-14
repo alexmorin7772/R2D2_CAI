@@ -5,6 +5,7 @@
 #include <Wire.h>
 #include <Digital_Light_TSL2561.h>
 #include <Servo.h>
+#include <SparkFun_TB6612.h>
 
 /*
 The following are all defined constants
@@ -36,6 +37,8 @@ The following are all defined constants
 //Define all macros
 #define BALL_DIAMETER 4.27
 //ball diameter in cm
+#define BALL_SIZE_10 120.0
+#define GOAL_SIZE_30 100.0
 #define OUT1 -1
 #define OUT2 -1
 //the OUT1 and OUT2 pins refer to analog pins and we read them to figure out whether to start or stop
@@ -62,6 +65,9 @@ pt pt_ball_distance;
 pt pt_goal_distance;
 pt pt_line_tracking;
 pt pt_lens_adjustment;
+pt ptBrain;
+pt ptActuator;
+
 
 //Huskylens variables
 HUSKYLENS huskylens;
@@ -72,17 +78,19 @@ struct location {
 };
 
 //ball distance variables
-float ball_size_10 = 120.0;
 float ball_current_distance;
 float ball_current_size;
 float ball_turn_angle;
+int ball_leftmost_x;
+int ball_rightmost_x;
 location ball_location;
 
 //goal distance variables
-float goal_size_30 = 100.0;
 float goal_current_distance;
 float goal_height;
 float goal_turn_angle;
+int goal_leftmost_x;
+int goal_rightmost_x;
 location goal_location;
 
 //line tracking variables
@@ -128,6 +136,8 @@ struct object_recognition_results {
   //once someone reads it, it should be set to false so the same information isn't used again
   bool object_found = false;
 };
+object_recognition_results ball_results;
+object_recognition_results goal_results;
 
 struct line_tracking_results {
   location origin, target;
@@ -135,7 +145,7 @@ struct line_tracking_results {
 };
 
 //variables to test semaphores and reading from a shared 32-bit variable
-pt_sem sem_ball, sem_goal, sem_line;
+pt_sem sem_ball, sem_goal, sem_line, sem_ipc, sem_motor;
 uint32_t ipc_comms = 0;
 
 //state machine variables
@@ -171,9 +181,13 @@ void setup() {
   PT_INIT(&pt_goal_distance);
   PT_INIT(&pt_line_tracking);
   PT_INIT(&pt_lens_adjustment);
+  PT_INIT(&ptBrain);
+  PT_INIT(&ptActuator);
   PT_SEM_INIT(&sem_ball, 1);
   PT_SEM_INIT(&sem_goal, 1);
   PT_SEM_INIT(&sem_line, 1);
+  PT_SEM_INIT(&sem_ipc, 1);
+  PT_SEM_INIT(&sem_motor, 1);
   myservo.attach(9);  // attaches the servo on pin 9 to the Servo object
   while (!huskylens.begin(Wire)) Serial.println("Begin failed!");
   // huskyAlgorithm();   // Huskylens - Vision.ino
@@ -187,7 +201,9 @@ void loop() {
   //PT_SCHEDULE(eyelidThread(&ptEyelid));
   //PT_SCHEDULE(huskyRead(&ptHuskylens));
   PT_SCHEDULE(ball_distance(&pt_ball_distance));
-  PT_SCHEDULE(goal_distance(&pt_goal_distance));
-  PT_SCHEDULE(line_tracking(&pt_line_tracking));
-  PT_SCHEDULE(lens_adjustment(&pt_lens_adjustment));
+  //PT_SCHEDULE(goal_distance(&pt_goal_distance));
+  //PT_SCHEDULE(line_tracking(&pt_line_tracking));
+  //PT_SCHEDULE(lens_adjustment(&pt_lens_adjustment));
+  PT_SCHEDULE(threadBrain(&ptBrain));
+  PT_SCHEDULE(threadActuator(&ptActuator));
 }

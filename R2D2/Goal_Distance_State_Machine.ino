@@ -1,5 +1,5 @@
 object_recognition_state goal_state = start;
-object_recognition_results goal_results;
+//object_recognition_results goal_results;
 unsigned long goal_start_millis;
 
 int goal_distance(struct pt* pt) {
@@ -29,6 +29,7 @@ int goal_distance(struct pt* pt) {
         //change the confidence bit to 0 (not confident)
         ipc_comms &= ~GOAL_CONFIDENCE;
         goal_results.is_most_recent = false;
+        goal_results.object_found = false;
         PT_SEM_SIGNAL(pt, &sem_goal);
         //went over time limit, so go to finish
         goal_state = finish;
@@ -38,9 +39,11 @@ int goal_distance(struct pt* pt) {
       if (result.command != COMMAND_RETURN_BLOCK) goal_state = initialization; //if initialization somehow went wrong
       else {
         goal_height = static_cast<float>(result.height);
-        goal_current_distance = (goal_size_30 * 30) / goal_height;
+        goal_current_distance = (GOAL_SIZE_30 * 30) / goal_height;
         goal_location = {result.xCenter, result.yCenter};
         goal_turn_angle = angle_finder(result.xCenter);
+        goal_leftmost_x = result.xCenter - result.width / 2;
+        goal_rightmost_x = result.xCenter + result.width / 2;
         Serial.print("Goal distance: ");
         Serial.println(goal_current_distance);
         Serial.print("Location: (");
@@ -52,11 +55,7 @@ int goal_distance(struct pt* pt) {
         Serial.println(goal_turn_angle * RAD_TO_DEG);
         //take control of the results struct
         PT_SEM_WAIT(pt, &sem_goal);
-        goal_results.object_distance = goal_current_distance;
-        goal_results.object_size = goal_height;
-        goal_results.object_location = goal_location;
-        goal_results.object_turn_angle = goal_turn_angle;
-        goal_results.is_most_recent = true;
+        update_goal_results(goal_results);
         //change the confidence bit to 1 (confident)
         ipc_comms |= GOAL_CONFIDENCE;
         //allow other threads to read the results struct
@@ -77,10 +76,22 @@ int goal_distance(struct pt* pt) {
       //change the confidence bit to 0 (not confident)
       ipc_comms &= ~GOAL_CONFIDENCE;
       goal_results.is_most_recent = false;
+      goal_results.object_found = false;
       PT_SEM_SIGNAL(pt, &sem_goal);
       //goal_state doesn't match anything
       goal_state = initialization;
     }
   }
   PT_END(pt);
+}
+
+void update_goal_results(object_recognition_results& goal_results) {
+  goal_results.object_distance = goal_current_distance;
+  goal_results.object_size = goal_height;
+  goal_results.object_location = goal_location;
+  goal_results.object_turn_angle = goal_turn_angle;
+  goal_results.leftmost_x = goal_leftmost_x;
+  goal_results.rightmost_x = goal_rightmost_x;
+  goal_results.is_most_recent = true;
+  goal_results.object_found = true;
 }

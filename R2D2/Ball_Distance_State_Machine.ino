@@ -1,5 +1,5 @@
 object_recognition_state ball_state = start;
-object_recognition_results ball_results;
+//object_recognition_results ball_results; I DECLARED IT IN R2D2 instead
 unsigned long ball_start_millis;
 
 int ball_distance(struct pt* pt) {
@@ -29,6 +29,7 @@ int ball_distance(struct pt* pt) {
         //change the confidence bit to 0 (not confident)
         ipc_comms &= ~BALL_CONFIDENCE;
         ball_results.is_most_recent = false;
+        ball_results.object_found = false;
         PT_SEM_SIGNAL(pt, &sem_ball);
         //went over time limit, so go to finish
         ball_state = finish;
@@ -38,9 +39,11 @@ int ball_distance(struct pt* pt) {
       if (result.command != COMMAND_RETURN_BLOCK) ball_state = initialization; //if initialization somehow went wrong
       else {
         ball_current_size = (static_cast<float>(result.width) + static_cast<float>(result.height)) / 2.0;
-        ball_current_distance = (ball_size_10 * 10) / ball_current_size;
+        ball_current_distance = (BALL_SIZE_10 * 10) / ball_current_size;
         ball_location = {result.xCenter, result.yCenter};
         ball_turn_angle = angle_finder(result.xCenter);
+        ball_leftmost_x = result.xCenter - result.width / 2;
+        ball_rightmost_x = result.xCenter + result.width / 2;
         Serial.print("Ball distance: ");
         Serial.println(ball_current_distance);
         Serial.print("Location: (");
@@ -52,11 +55,7 @@ int ball_distance(struct pt* pt) {
         Serial.println(ball_turn_angle * RAD_TO_DEG);
         //take control of the results struct
         PT_SEM_WAIT(pt, &sem_ball);
-        ball_results.object_distance = ball_current_distance;
-        ball_results.object_size = ball_current_size;
-        ball_results.object_location = ball_location;
-        ball_results.object_turn_angle = ball_turn_angle;
-        ball_results.is_most_recent = true;
+        update_ball_results(ball_results);
         //change the confidence bit to 1 (confident)
         ipc_comms |= BALL_CONFIDENCE;
         //allow other threads to read the results struct
@@ -77,10 +76,22 @@ int ball_distance(struct pt* pt) {
       //change the confidence bit to 0 (not confident)
       ipc_comms &= ~BALL_CONFIDENCE;
       ball_results.is_most_recent = false;
+      ball_results.object_found = false;
       PT_SEM_SIGNAL(pt, &sem_ball);
       //ball_state doesn't match anything
       ball_state = initialization;
     }
   }
   PT_END(pt);
+}
+
+void update_ball_results(object_recognition_results& ball_results) {
+  ball_results.object_distance = ball_current_distance;
+  ball_results.object_size = ball_current_size;
+  ball_results.object_location = ball_location;
+  ball_results.object_turn_angle = ball_turn_angle;
+  ball_results.leftmost_x = ball_leftmost_x;
+  ball_results.rightmost_x = ball_rightmost_x;
+  ball_results.is_most_recent = true;
+  ball_results.object_found = true;
 }
