@@ -1,4 +1,4 @@
-#include "protothreads.h"
+/*#include "protothreads.h"
 #include "SoftwareSerial.h"
 #include "HUSKYLENS.h"
 #include <Wire.h>
@@ -207,4 +207,4 @@ void setup() {
 void loop() {
   PT_SCHEDULE(threadBrain(&ptBrain));
   PT_SCHEDULE(threadKick(&ptKick));
-}
+}*/
