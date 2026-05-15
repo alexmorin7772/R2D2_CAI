@@ -1,4 +1,4 @@
-#include <SparkFun_TB6612.h>
+/*#include <SparkFun_TB6612.h>
 
 #define MASK_IPC_Brain_Read_Confirmation   0x00040000
 #define MASK_IPC_Touch_To_Brain            0x00080000
@@ -148,3 +148,4 @@ int update_motor_data(struct pt *pt) {
   }
   PT_END(pt);
 }
+*/

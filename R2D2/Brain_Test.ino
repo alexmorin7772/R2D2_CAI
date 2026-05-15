@@ -1,4 +1,4 @@
-/*#include "protothreads.h"
+#include "protothreads.h"
 #include "SoftwareSerial.h"
 #include "HUSKYLENS.h"
 #include <Wire.h>

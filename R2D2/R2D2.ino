@@ -185,7 +185,7 @@ void setup() {
   //serial.being(9600);
   Wire.begin();
   TSL2561.init();
-  //touchSetup();
+  touchSetup();
   //PT_INIT(&ptHuskylens);
   PT_INIT(&pt_ball_distance);
   PT_INIT(&pt_goal_distance);
