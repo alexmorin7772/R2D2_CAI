@@ -1,3 +1,11 @@
+/*#include "protothreads.h"
+#include "SoftwareSerial.h"
+#include "HUSKYLENS.h"
+#include <Wire.h>
+#include <Digital_Light_TSL2561.h>
+#include <Servo.h>
+#include <SparkFun_TB6612.h>
+#include "pt-sem.h"
 #include "defines.h"
 #include "motorStruct.h"
 
@@ -203,5 +211,3 @@ int threadActuator(struct pt *pt) {
     }
     PT_END(pt);
 }
-
-
