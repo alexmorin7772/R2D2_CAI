@@ -28,22 +28,29 @@ const int OFFSET_X = 40; //random numbers
 bool bBetweenPosts = false;
 bool bCenteredOnGoal = false;
 bool bGoalAligned = false;
-bool bPresent = false;
 float temp_ball_distance;
 float temp_goal_distance;
 
+extern volatile boolean bKick;
+extern volatile boolean bPresent;
+extern volatile boolean bBeastMode;
+
 runMode_t runMode;
+static Brain_States brainState;
+static Brain_States prevState;
 
 // States for simulating for Main protothread's logic/brain execution.
-enum brainState {
+/*
+typedef enum Brain_States {
   msKick = 0,   // State to do one-time initialization or full restart of the state machine
   msSearch,  //Waits for signal from bit flags and gets data from structs
   msGoalAlign,
   msBallAlign,
   msGoalApproach,
   msBallApproach
-} brainState;
-
+};
+Brain_States 
+*/
 #define MASK_IPC_Brain_Read_Confirmation   0x00040000 // same as 0b 0000 0000 0000 0100 0000 0000 0000 0000 - Same as Touch confirming that it read from Brain
 #define MASK_IPC_Touch_To_Brain            0x00080000 // same as 0b 0000 0000 0000 1000 0000 0000 0000 0000
 
@@ -67,31 +74,69 @@ int threadBrain(struct pt *pt) {
         bBetweenPosts = ((goal_results.leftmost_x < CENTER_X) && (goal_results.rightmost_x > CENTER_X));
         bCenteredOnGoal = (abs(goal_results.object_location.x - CENTER_X) <= OFFSET_X);
         bGoalAligned = bBetweenPosts || bCenteredOnGoal;
+        if (ball_results.object_found) {
+            Serial.println(F("WOW I CAN SEE THE BALL ********"));
+        }
 
         if ((!ball_results.object_found) && (bPresent) && (goal_results.object_distance < 10) && (bGoalAligned)) {
+            if (prevState != brainState) {
+                Serial.println(F("msKick"));
+            }
+            prevState = brainState;
             brainState = msKick;
         }
         else if ((!ball_results.object_found) && (!bPresent)) {
-            brainState = msSearch;
+            if (prevState != brainState) {
+                Serial.println(F("msBallSearch"));
+            }
+            prevState = brainState;
+            brainState = msBallSearch;
         } 
         else if ((!ball_results.object_found) && (bPresent) && (goal_results.object_found)) {
+            if (prevState != brainState) {
+                Serial.println(F("msAlign"));
+            }
+            prevState = brainState;
             brainState = msGoalAlign;
         }
         else if ((!ball_results.object_found) && (bPresent) && (!goal_results.object_found)) {
-            brainState = msSearch;
+            if (prevState != brainState) {
+                Serial.println(F("msGoalSearch"));
+            }
+            prevState = brainState;
+            brainState = msGoalSearch;
         }
         //no ball spotted after doing a full revolution?
         else if ((ball_results.object_found) && (ball_results.object_location.x != CENTER_X)) {
+            if (prevState != brainState) {
+                Serial.println(F("msBallAlign"));
+            }
+            prevState = brainState;
             brainState = msBallAlign;
         }
         else if ((ball_results.object_found) && (ball_results.object_location.x == CENTER_X)) {
+            if (prevState != brainState) {
+                Serial.println(F("msBallApproach"));
+            }
+            prevState = brainState;
             brainState = msBallApproach;
         }
         else if ((!ball_results.object_found) && (bPresent) && (goal_results.object_found) && (!bGoalAligned)) {
+            if (prevState != brainState) {
+                Serial.println(F("msGoalAlign"));
+            }
+            prevState = brainState;
             brainState = msGoalAlign;
         }
         else if ((!ball_results.object_found) && (bPresent) && (goal_results.object_found) && (bGoalAligned)) {
+            if (prevState != brainState) {
+                Serial.println(F("msGoalApproach"));
+            }
+            prevState = brainState;
             brainState = msGoalApproach;
+        }
+        else {
+            Serial.println("...");
         }
         PT_SLEEP(pt, 1);  // Sleep after each decision cycle
     }
@@ -103,15 +148,21 @@ int threadActuator(struct pt *pt) {
     PT_BEGIN(pt);
     for(;;) {
         if (brainState == msKick) {
-            serial.println("kicking...");
+            Serial.println(F("kicking..."));
             //activate solenoid
         } 
-        else if (brainState == msSearch) {
+        else if (brainState == msBallSearch) {
             PT_SEM_WAIT(pt, &sem_motor);
             motorData.opState = rRotateL;
             motorData.targetAngle = 68.0; //camera can only see 68 ig oof
             PT_SEM_SIGNAL(pt, &sem_motor);
         } 
+        else if (brainState == msGoalSearch) {
+            PT_SEM_WAIT(pt, &sem_motor);
+            motorData.opState = rRotateL;
+            motorData.targetAngle = 68.0; //need to do goal/ball difference to tell camera to prioritize checking of one
+            PT_SEM_SIGNAL(pt, &sem_motor);
+        }
         else if (brainState == msBallAlign) {
             PT_SEM_WAIT(pt, &sem_motor);
             degA = ball_results.object_turn_angle * RAD_TO_DEG; //agree on this (done 5/9)

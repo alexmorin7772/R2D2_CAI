@@ -39,12 +39,12 @@ int line_tracking(struct pt* pt) {
       else {
         line_origin = {result.xOrigin, result.yOrigin};
         line_target = {result.xTarget, result.yTarget};
-        Serial.print("Line origin: (");
+        Serial.print(F("Line origin: ("));
         Serial.print(line_origin.x);
         Serial.print(", ");
         Serial.print(line_origin.y);
         Serial.println(")");
-        Serial.print("Line target: (");
+        Serial.print(F("Line target: ("));
         Serial.print(line_target.x);
         Serial.print(", ");
         Serial.print(line_target.y);
@@ -62,9 +62,9 @@ int line_tracking(struct pt* pt) {
       }
     } else if (line_state == line_finish) {
       //debug prints for the semaphore and shared flags
-      Serial.print("Line semaphore value: ");
+      Serial.print(F("Line semaphore value: "));
       Serial.println(sem_line.count);
-      Serial.print("Line confidence: ");
+      Serial.print(F("Line confidence: "));
       Serial.println(ipc_comms & LINE_CONFIDENCE);
       line_state = line_start;
       PT_SLEEP(pt, 1000);

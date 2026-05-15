@@ -1,11 +1,12 @@
 #include "protothreads.h"
 #include "pt-sem.h"
-#include "SoftwareSerial.h"
+//#include "SoftwareSerial.h"
 #include "HUSKYLENS.h"
 #include <Wire.h>
 #include <Digital_Light_TSL2561.h>
 #include <Servo.h>
 #include <SparkFun_TB6612.h>
+#include "touch.h"
 
 /*
 The following are all defined constants
@@ -59,19 +60,21 @@ The following are all defined constants
 #define FOCAL_LENGTH 234 //focal length of camera
 
 //Create all protothread structs
-pt ptEyelid;
-pt ptHuskylens;
+//pt ptHuskylens;
 pt pt_ball_distance;
 pt pt_goal_distance;
 pt pt_line_tracking;
 pt pt_lens_adjustment;
 pt ptBrain;
 pt ptActuator;
+extern volatile pt solKick;
+extern volatile pt ptAlex_test;
+extern volatile pt readPos, adcDisp;
 
 
 //Huskylens variables
 HUSKYLENS huskylens;
-SoftwareSerial serial(10, 11);
+//SoftwareSerial serial(10, 11);
 
 struct location {
   int x, y;
@@ -104,6 +107,15 @@ Coordinate system
 
 (0, 240)               (320, 240)
 */
+
+extern volatile pt solKick; // Touch.ino declarations
+extern volatile pt ptAlex_test; // Touch.ino declarations
+extern volatile pt readPos, adcDisp; // Touch.ino declarations
+
+bool started = false;
+//boolean for the start/stop signal
+
+#define SOLENOID_PIN 12
 
 //object recognition state machine
 enum object_recognition_state {
@@ -146,6 +158,7 @@ struct line_tracking_results {
 
 //variables to test semaphores and reading from a shared 32-bit variable
 pt_sem sem_ball, sem_goal, sem_line, sem_ipc, sem_motor;
+extern pt_sem semTouch;
 uint32_t ipc_comms = 0;
 
 //state machine variables
@@ -167,16 +180,13 @@ int lux = 0;
 int actual_lux = 0;
 int angle = 0;
 
-bool started = false;
-//boolean for the start/stop signal
-
 void setup() {
   Serial.begin(115200);
-  serial.begin(9600);
+  //serial.being(9600);
   Wire.begin();
   TSL2561.init();
-  PT_INIT(&ptEyelid);
-  PT_INIT(&ptHuskylens);
+  //touchSetup();
+  //PT_INIT(&ptHuskylens);
   PT_INIT(&pt_ball_distance);
   PT_INIT(&pt_goal_distance);
   PT_INIT(&pt_line_tracking);
@@ -189,7 +199,7 @@ void setup() {
   PT_SEM_INIT(&sem_ipc, 1);
   PT_SEM_INIT(&sem_motor, 1);
   myservo.attach(9);  // attaches the servo on pin 9 to the Servo object
-  while (!huskylens.begin(Wire)) Serial.println("Begin failed!");
+  while (!huskylens.begin(Wire)) Serial.println(F("Begin failed!"));
   // huskyAlgorithm();   // Huskylens - Vision.ino
   // motorSetup();       // Motor Driver - 
   // groveDLSsetup();    // Light Sensor - 
@@ -198,12 +208,15 @@ void setup() {
 }
 
 void loop() {
-  //PT_SCHEDULE(eyelidThread(&ptEyelid));
   //PT_SCHEDULE(huskyRead(&ptHuskylens));
   PT_SCHEDULE(ball_distance(&pt_ball_distance));
-  //PT_SCHEDULE(goal_distance(&pt_goal_distance));
-  //PT_SCHEDULE(line_tracking(&pt_line_tracking));
-  //PT_SCHEDULE(lens_adjustment(&pt_lens_adjustment));
+  PT_SCHEDULE(goal_distance(&pt_goal_distance));
+  PT_SCHEDULE(line_tracking(&pt_line_tracking));
+  PT_SCHEDULE(lens_adjustment(&pt_lens_adjustment));
   PT_SCHEDULE(threadBrain(&ptBrain));
   PT_SCHEDULE(threadActuator(&ptActuator));
+  PT_SCHEDULE(threadADCRead(&readPos));
+  PT_SCHEDULE(threadDisplay(&adcDisp));
+  PT_SCHEDULE(threadKick(&solKick));
+  PT_SCHEDULE(threadMain(&ptAlex_test));
 }

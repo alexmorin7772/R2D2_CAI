@@ -44,14 +44,14 @@ int ball_distance(struct pt* pt) {
         ball_turn_angle = angle_finder(result.xCenter);
         ball_leftmost_x = result.xCenter - result.width / 2;
         ball_rightmost_x = result.xCenter + result.width / 2;
-        Serial.print("Ball distance: ");
+        Serial.print(F("Ball distance: "));
         Serial.println(ball_current_distance);
-        Serial.print("Location: (");
+        Serial.print(F("Location: ("));
         Serial.print(ball_location.x);
         Serial.print(", ");
         Serial.print(ball_location.y);
         Serial.println(")");
-        Serial.print("Ball angle: ");
+        Serial.print(F("Ball angle: "));
         Serial.println(ball_turn_angle * RAD_TO_DEG);
         //take control of the results struct
         PT_SEM_WAIT(pt, &sem_ball);
@@ -64,9 +64,9 @@ int ball_distance(struct pt* pt) {
       }
     } else if (ball_state == finish) {
       //debug prints for the semaphore and shared flags
-      Serial.print("Ball semaphore value: ");
+      Serial.print(F("Ball semaphore value: "));
       Serial.println(sem_ball.count);
-      Serial.print("Ball confidence: ");
+      Serial.print(F("Ball confidence: "));
       Serial.println(ipc_comms & BALL_CONFIDENCE);
       ball_state = start;
       PT_SLEEP(pt, 1000);
@@ -81,6 +81,7 @@ int ball_distance(struct pt* pt) {
       //ball_state doesn't match anything
       ball_state = initialization;
     }
+    PT_SLEEP(pt, 1);
   }
   PT_END(pt);
 }
