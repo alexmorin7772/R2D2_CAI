@@ -182,6 +182,7 @@ void setup() {
   PT_SEM_INIT(&sem_line, 1);
   myservo.attach(9);  // attaches the servo on pin 9 to the Servo object
   while (!huskylens.begin(Wire)) Serial.println("Begin failed!");
+  huskylens.writeAlgorithm(ALGORITHM_COLOR_RECOGNITION);
   // huskyAlgorithm();   // Huskylens - Vision.ino
   // motorSetup();       // Motor Driver - 
   // groveDLSsetup();    // Light Sensor - 

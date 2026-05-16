@@ -12,7 +12,8 @@ int ball_distance(struct pt* pt) {
       ball_state = initialization;
       //have to go to initialization
     } else if (ball_state == initialization) {
-      huskylens.writeAlgorithm(ALGORITHM_COLOR_RECOGNITION);
+      //huskylens.writeAlgorithm(ALGORITHM_COLOR_RECOGNITION);
+      //no longer needed since color recognition is the only algorithm used
       ball_state = test_for_object;
       //initialize everything and test for ball
     } else if (ball_state == test_for_object) {

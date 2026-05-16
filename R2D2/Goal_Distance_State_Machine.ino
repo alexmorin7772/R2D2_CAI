@@ -12,7 +12,8 @@ int goal_distance(struct pt* pt) {
       goal_state = initialization;
       //have to go to initialization
     } else if (goal_state == initialization) {
-      huskylens.writeAlgorithm(ALGORITHM_COLOR_RECOGNITION);
+      //huskylens.writeAlgorithm(ALGORITHM_COLOR_RECOGNITION);
+      //no longer needed since color recognition is the only algorithm used
       goal_state = test_for_object;
       //initialize everything and test for goal
     } else if (goal_state == test_for_object) {
