@@ -5,34 +5,13 @@ unsigned long ball_start_millis;
 int ball_distance(struct pt* pt) {
   PT_BEGIN(pt);
   for (;;) {
-    //Serial.print("Ball state: ");
-    //Serial.println(ball_state);
     if (ball_state == start) {
-      ball_start_millis = millis();
-      ball_state = initialization;
-      //have to go to initialization
-    } else if (ball_state == initialization) {
-      //huskylens.writeAlgorithm(ALGORITHM_COLOR_RECOGNITION);
-      //no longer needed since color recognition is the only algorithm used
       ball_state = test_for_object;
-      //initialize everything and test for ball
+      //once we start, test if the object is there
     } else if (ball_state == test_for_object) {
-      //Serial.println("Ball started!");
-      //failure leads to checking the time
-      if (!huskylens.request() or !huskylens.countBlocks(BALL_ID)) ball_state = check_time;
+      if (!huskylens.request() or !huskylens.countBlocks(BALL_ID)) ball_state = fail;
       else ball_state = evaluate_distance;
       //otherwise find the distance
-    } else if (ball_state == check_time) {
-      if (millis() - ball_start_millis > MAX_MILLISECONDS) {
-        PT_SEM_WAIT(pt, &sem_ball);
-        //change the confidence bit to 0 (not confident)
-        ipc_comms &= ~BALL_CONFIDENCE;
-        ball_results.is_most_recent = false;
-        ball_results.object_found = false;
-        PT_SEM_SIGNAL(pt, &sem_ball);
-        //went over time limit, so go to finish
-        ball_state = finish;
-      } else ball_state = test_for_object;
     } else if (ball_state == evaluate_distance) {
       HUSKYLENSResult result = huskylens.getBlock(BALL_ID, 0); //the 0 means the first block with that ID
       ball_current_size = (static_cast<float>(result.width) + static_cast<float>(result.height)) / 2.0;
@@ -41,14 +20,14 @@ int ball_distance(struct pt* pt) {
       ball_turn_angle = angle_finder(result.xCenter);
       ball_leftmost_x = result.xCenter - result.width / 2;
       ball_rightmost_x = result.xCenter + result.width / 2;
-      Serial.print("Ball distance: ");
+      Serial.print(F("Ball distance: "));
       Serial.println(ball_current_distance);
-      Serial.print("Location: (");
+      Serial.print(F("Location: ("));
       Serial.print(ball_location.x);
-      Serial.print(", ");
+      Serial.print(F(", "));
       Serial.print(ball_location.y);
-      Serial.println(")");
-      Serial.print("Ball angle: ");
+      Serial.println(F(")"));
+      Serial.print(F("Ball angle: "));
       Serial.println(ball_turn_angle * RAD_TO_DEG);
       //take control of the results struct
       PT_SEM_WAIT(pt, &sem_ball);
@@ -58,15 +37,23 @@ int ball_distance(struct pt* pt) {
       //allow other threads to read the results struct
       PT_SEM_SIGNAL(pt, &sem_ball);
       ball_state = finish; //successfully found the distance, so go to finish
+    } else if (ball_state == fail) {
+      PT_SEM_WAIT(pt, &sem_ball);
+      //change the confidence bit to 0 (not confident)
+      ipc_comms &= ~BALL_CONFIDENCE;
+      ball_results.is_most_recent = false;
+      ball_results.object_found = false;
+      PT_SEM_SIGNAL(pt, &sem_ball);
+      ball_state = finish;
     } else if (ball_state == finish) {
       //debug prints for the semaphore and shared flags
-      Serial.print("Ball semaphore value: ");
+      Serial.print(F("Ball semaphore value: "));
       Serial.println(sem_ball.count);
-      Serial.print("Ball confidence: ");
+      Serial.print(F("Ball confidence: "));
       Serial.println(ipc_comms & BALL_CONFIDENCE);
       ball_state = start;
-      PT_SLEEP(pt, 1000);
-      //recalculate after 1 second
+      PT_SLEEP(pt, 1);
+      //recalculate after 1 millisecond
     } else {
       PT_SEM_WAIT(pt, &sem_ball);
       //change the confidence bit to 0 (not confident)
@@ -75,7 +62,7 @@ int ball_distance(struct pt* pt) {
       ball_results.object_found = false;
       PT_SEM_SIGNAL(pt, &sem_ball);
       //ball_state doesn't match anything
-      ball_state = initialization;
+      ball_state = start;
     }
   }
   PT_END(pt);

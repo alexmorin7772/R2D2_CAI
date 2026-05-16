@@ -106,10 +106,9 @@ Coordinate system
 //object recognition state machine
 enum object_recognition_state {
   start,
-  initialization,
   test_for_object,
-  check_time,
   evaluate_distance,
+  fail,
   finish
 };
 
