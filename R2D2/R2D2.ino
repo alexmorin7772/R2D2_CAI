@@ -55,6 +55,9 @@ The following are all defined constants
 #define GOAL_CONFIDENCE 0b10
 #define LINE_CONFIDENCE 0b100
 #define FOCAL_LENGTH 234 //focal length of camera
+#define BALL_ID 1
+#define GOAL_ID 2
+//huskylens IDs for the ball and the goal
 
 //Create all protothread structs
 pt ptEyelid;
@@ -191,6 +194,6 @@ void loop() {
   //PT_SCHEDULE(huskyRead(&ptHuskylens));
   PT_SCHEDULE(ball_distance(&pt_ball_distance));
   PT_SCHEDULE(goal_distance(&pt_goal_distance));
-  PT_SCHEDULE(line_tracking(&pt_line_tracking));
+  //PT_SCHEDULE(line_tracking(&pt_line_tracking));
   PT_SCHEDULE(lens_adjustment(&pt_lens_adjustment));
 }

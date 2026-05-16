@@ -12,15 +12,13 @@ int ball_distance(struct pt* pt) {
       ball_state = initialization;
       //have to go to initialization
     } else if (ball_state == initialization) {
-      huskylens.writeAlgorithm(ALGORITHM_OBJECT_TRACKING);
+      huskylens.writeAlgorithm(ALGORITHM_COLOR_RECOGNITION);
       ball_state = test_for_object;
       //initialize everything and test for ball
     } else if (ball_state == test_for_object) {
       //Serial.println("Ball started!");
       //failure leads to checking the time
-      if (!huskylens.request()) ball_state = check_time;
-      else if (!huskylens.isLearned()) ball_state = check_time;
-      else if (!huskylens.available()) ball_state = check_time;
+      if (!huskylens.request() or !huskylens.countBlocks(BALL_ID)) ball_state = check_time;
       else ball_state = evaluate_distance;
       //otherwise find the distance
     } else if (ball_state == check_time) {
@@ -35,33 +33,30 @@ int ball_distance(struct pt* pt) {
         ball_state = finish;
       } else ball_state = test_for_object;
     } else if (ball_state == evaluate_distance) {
-      HUSKYLENSResult result = huskylens.read();
-      if (result.command != COMMAND_RETURN_BLOCK) ball_state = initialization; //if initialization somehow went wrong
-      else {
-        ball_current_size = (static_cast<float>(result.width) + static_cast<float>(result.height)) / 2.0;
-        ball_current_distance = (BALL_SIZE_10 * 10) / ball_current_size;
-        ball_location = {result.xCenter, result.yCenter};
-        ball_turn_angle = angle_finder(result.xCenter);
-        ball_leftmost_x = result.xCenter - result.width / 2;
-        ball_rightmost_x = result.xCenter + result.width / 2;
-        Serial.print("Ball distance: ");
-        Serial.println(ball_current_distance);
-        Serial.print("Location: (");
-        Serial.print(ball_location.x);
-        Serial.print(", ");
-        Serial.print(ball_location.y);
-        Serial.println(")");
-        Serial.print("Ball angle: ");
-        Serial.println(ball_turn_angle * RAD_TO_DEG);
-        //take control of the results struct
-        PT_SEM_WAIT(pt, &sem_ball);
-        update_ball_results(ball_results);
-        //change the confidence bit to 1 (confident)
-        ipc_comms |= BALL_CONFIDENCE;
-        //allow other threads to read the results struct
-        PT_SEM_SIGNAL(pt, &sem_ball);
-        ball_state = finish; //successfully found the distance, so go to finish
-      }
+      HUSKYLENSResult result = huskylens.getBlock(BALL_ID, 0); //the 0 means the first block with that ID
+      ball_current_size = (static_cast<float>(result.width) + static_cast<float>(result.height)) / 2.0;
+      ball_current_distance = (BALL_SIZE_10 * 10) / ball_current_size;
+      ball_location = {result.xCenter, result.yCenter};
+      ball_turn_angle = angle_finder(result.xCenter);
+      ball_leftmost_x = result.xCenter - result.width / 2;
+      ball_rightmost_x = result.xCenter + result.width / 2;
+      Serial.print("Ball distance: ");
+      Serial.println(ball_current_distance);
+      Serial.print("Location: (");
+      Serial.print(ball_location.x);
+      Serial.print(", ");
+      Serial.print(ball_location.y);
+      Serial.println(")");
+      Serial.print("Ball angle: ");
+      Serial.println(ball_turn_angle * RAD_TO_DEG);
+      //take control of the results struct
+      PT_SEM_WAIT(pt, &sem_ball);
+      update_ball_results(ball_results);
+      //change the confidence bit to 1 (confident)
+      ipc_comms |= BALL_CONFIDENCE;
+      //allow other threads to read the results struct
+      PT_SEM_SIGNAL(pt, &sem_ball);
+      ball_state = finish; //successfully found the distance, so go to finish
     } else if (ball_state == finish) {
       //debug prints for the semaphore and shared flags
       Serial.print("Ball semaphore value: ");
