@@ -69,10 +69,8 @@ motor_data current_motor_data = {-1, -1, idle}; //start by being idle
 
 int update_motor_state(struct pt *pt) {
   PT_BEGIN(pt);
-  if (ball_results.object_found) {
-    Serial.println(F("I CAN SEE THE BALL **"));
-  }
   for(;;) {
+    Serial.println(current_motor_state);
     between_posts = (goal_results.object_found) && (goal_results.leftmost_x <= CENTER_X) && (goal_results.rightmost_x >= CENTER_X);
     centered_on_goal = (goal_results.object_found) && (abs(goal_results.object_location.x - CENTER_X) <= GOAL_OFFSET_X);
     aligned_on_goal = between_posts;
@@ -106,7 +104,9 @@ int update_motor_state(struct pt *pt) {
     } else if (ball_results.object_found && !bPresent && aligned_on_ball) {
       //we see the ball and are aligned
       current_motor_state = go_to_ball;
-      //Serial.println(F("go_to_ball"));
+      Serial.println(F("go_to_ball"));
+    } else {
+      Serial.println(F("**************"));
     }
     PT_SLEEP(pt, 1);
   }
@@ -143,7 +143,7 @@ int update_motor_data(struct pt *pt) {
       PT_SEM_WAIT(pt, &sem_motor);
       current_motor_data.action = drive_forward;
       PT_SEM_SIGNAL(pt, &sem_motor);
-    }
+    } 
     PT_SLEEP(pt, 1);
   }
   PT_END(pt);
