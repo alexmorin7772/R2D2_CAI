@@ -107,7 +107,6 @@ unsigned long ball_start_millis;
 
 void setupVision(void) {
   serial.begin(9600);
-    Serial.println("Vision Open");
   
   PT_INIT(&ptEyelid);
   PT_INIT(&ptHuskylens);
@@ -116,8 +115,6 @@ void setupVision(void) {
   PT_INIT(&pt_lens_adjustment);
   PT_SEM_INIT(&sem_ball, 0);
   PT_SEM_INIT(&sem_goal, 0);
-
-  Serial.println("Vision PT Open");
   
   #ifdef CAMERA_THREADS
     while (!huskylens.begin(Wire)) Serial.println("Begin failed!");

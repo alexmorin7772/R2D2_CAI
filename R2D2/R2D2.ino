@@ -13,11 +13,6 @@ Can Comment/Uncomment lines using #ifdef and #endif
 */
 
 // #define CAMERA_THREADS // For CAMERA_THREADS that are disabled: Uncomment to re-enable
-
-extern volatile pt solKick; // Touch.ino declarations
-extern volatile pt ptAlex_test; // Touch.ino declarations
-extern volatile pt readPos, adcDisp; // Touch.ino declarations
-
 uint32_t ipc_comms = 0;
 
 bool started = false;
@@ -27,16 +22,12 @@ bool started = false;
 
 void setup() {
   Serial.begin(115200);
-  // while (!Serial && (millis() < 5000)); // Wait 5 seconds
+  while (!Serial && (millis() < 5000)); // Wait 5 seconds
   Wire.begin();
-  Serial.println("Serial Start");
   
-  // setupVision();
-  //   Serial.println("Vision Start");
-  // setupLightSensor();
-  //   Serial.println("Light Start");
   touchSetup();
-    Serial.println("Touch Start");
+  setupVision();
+  setupLightSensor();
   
   // Touch.ino declarations moved to touch.h
 
@@ -55,8 +46,5 @@ void loop() {
     PT_SCHEDULE(goal_distance(&pt_goal_distance));
     PT_SCHEDULE(lens_adjustment(&pt_lens_adjustment));
   #endif
-  PT_SCHEDULE(threadADCRead(&readPos));
-  PT_SCHEDULE(threadDisplay(&adcDisp));
-  PT_SCHEDULE(threadKick(&solKick));
-  PT_SCHEDULE(threadMain(&ptAlex_test));
+  RunTouchKickScheduler();
 }

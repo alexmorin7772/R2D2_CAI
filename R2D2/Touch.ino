@@ -13,10 +13,13 @@ C) Using an extra function "getTicksDuration" for millis() time calculations out
 
 #include "touch.h"
 #include "Utils.h"
+#include <util/atomic.h>
 
-volatile pt solKick;
-volatile pt ptAlex_test;
-volatile pt readPos, adcDisp;
+static volatile pt solKick;
+static volatile pt ptAlex_test;
+static volatile pt readPos, adcDisp;
+
+extern uint32_t ipc_comms;
 
 int offset = 0;
 
@@ -71,6 +74,19 @@ void touchSetup(void) {
   ADMUX = bit(REFS0) | 1; // Set voltage reference and select ADC channel
   ADCSRA |= bit(ADIE); // Enable ADC interrupt
   // **************************************
+
+  sei(); // Enable global interrupts
+  
+  // Start a new ADC conversion
+  adcStarted = true; // Set the flag
+  ADCSRA |= bit(ADSC); // Start ADC conversion
+}
+
+void RunTouchKickScheduler(void) {
+  PT_SCHEDULE(threadADCRead(&readPos));
+  PT_SCHEDULE(threadDisplay(&adcDisp));
+  PT_SCHEDULE(threadKick(&solKick));
+  PT_SCHEDULE(threadMain(&ptAlex_test));
 }
 
 // ADC complete interrupt service routine
@@ -120,10 +136,6 @@ void readSensorPos(void) {
   // Start a new ADC conversion
   adcStarted = true; // Set the flag
   ADCSRA |= bit(ADSC); // Start ADC conversion
-  // A_pos = analogRead(V_wiper);
-
-  // digitalWrite(V1, LOW);
-  // digitalWrite(V2, HIGH);
 }
 
 static volatile int i = 0;
@@ -134,40 +146,43 @@ static int threadADCRead(struct pt* pos)
 
   eReadState_t eReadState = RS_INIT;
 
-  if (eReadState == RS_INIT) {
-    prevTime4 = millis();
-    eReadState = RS_ADC;
-  }
-  else if (eReadState == RS_ADC) {
-    if (!adcStarted) { // Check if a reading is ready after sampling and interrupt
-      // read the value from the sensor:
-      // PT_SEM_WAIT(pos, &semTouch); // This forces a sleep until the semaphore is signaled by another thread or already signaled
-      readSensorPos();  // This enables the sensor sampler and interrupt trigger, setting the adcStarted to true
-      PT_WAIT_UNTIL(pos, adcStarted == false); // Forces a sleep until adcStarted returns to false (by the ISR interrupt)
-      // Post_Touch_Event_to_Brain();
-      // PT_SEM_SIGNAL(pos, &semTouch); // Releases the next thread th     at was waiting for the semaphore to be signaled
-      
-      if (i < 4) {
-        V_datapoints[i++] = (5.0/1024)*29*A_pos;
-      }
-      else {
-        V_datapoints[0] = V_datapoints[1];
-        V_datapoints[1] = V_datapoints[2];
-        V_datapoints[2] = V_datapoints[3];
-        V_datapoints[3] = (5.0/1024)*29*A_pos;
+  for (;;) {
 
-        eReadState = RS_WAIT;
-      }
-    }
-
-    PT_YIELD(pos);
-  }
-  else if (eReadState == RS_WAIT) {
-    if (getTicksDuration(prevTime4, millis()) >= 1) {
+    if (eReadState == RS_INIT) {
       prevTime4 = millis();
       eReadState = RS_ADC;
     }
-  }
+    else if (eReadState == RS_ADC) {
+      if (!adcStarted) { // Check if a reading is ready after sampling and interrupt
+        // read the value from the sensor:
+        // PT_SEM_WAIT(pos, &semTouch); // This forces a sleep until the semaphore is signaled by another thread or already signaled
+        readSensorPos();  // This enables the sensor sampler and interrupt trigger, setting the adcStarted to true
+        PT_WAIT_UNTIL(pos, adcStarted == false); // Forces a sleep until adcStarted returns to false (by the ISR interrupt)
+        // Post_Touch_Event_to_Brain();
+        // PT_SEM_SIGNAL(pos, &semTouch); // Releases the next thread th     at was waiting for the semaphore to be signaled
+        
+        if (i < 4) {
+          V_datapoints[i++] = (5.0/1024)*29*A_pos;
+        }
+        else {
+          V_datapoints[0] = V_datapoints[1];
+          V_datapoints[1] = V_datapoints[2];
+          V_datapoints[2] = V_datapoints[3];
+          V_datapoints[3] = (5.0/1024)*29*A_pos;
+
+          eReadState = RS_WAIT;
+        }
+      }
+
+      PT_YIELD(pos);
+    }
+    else if (eReadState == RS_WAIT) {
+      if (getTicksDuration(prevTime4, millis()) >= 1) {
+        prevTime4 = millis();
+        eReadState = RS_ADC;
+      }
+    }
+  } // forever
 
   PT_END(pos);
 }
@@ -176,115 +191,116 @@ static int threadDisplay(struct pt* disp)
 {
   PT_BEGIN(disp);
 
-  eDispState_t eDispState = DS_INIT;
+  static eDispState_t eDispState = DS_INIT;
 
-  // for (;;)
-  // {
-  if (eDispState == DS_INIT) {
-    prevTime1 = millis();
-    eDispState = DS_CHECK;
-  }
-  else if (eDispState == DS_CHECK) {
-    // PORTB |= (1 << 4);
-    PT_SEM_WAIT(disp, &semTouch);
-    if (Check_Available_Brain_Event()) {
-      ipc_comms |= MASK_IPC_Touch_Read_Confirmation; // Touch confirms that it read from brain (turns the bit from 0 to 1)
-      // ipc_comms &= ~MASK_IPC_Brain_To_Touch; // Touch resets the brain event to open for new ones (turns the bit back from 1 to 0 again)
-
-      if ( (bKick == true) && (bKick_Start == false) ) {  // Kick when not already active - (including solenoid reset time)
-        bKick = false;
-        // digitalWrite(LED_BUILTIN, LOW); // Kick execution starts (LOW)
-        bKick_Start = true;
-      }
-      
-      if (bBeastMode == true) {
-        bKick_Again = true;
-      }
-    }
-    PT_SEM_SIGNAL(disp, &semTouch);
-
-    PT_YIELD(disp);
-
-    eDispState = DS_PRINT;
-  }
-  else if (eDispState == DS_PRINT) {
-    Serial.print(5);
-    Serial.print(",");
-    Serial.print(0);
-    Serial.print(",");
-    
-    V_value = (5.0/1024)*29*A_pos;
-    V_average = (V_datapoints[0] + V_datapoints[1] + V_datapoints[2] + V_datapoints[3]) / 4.0; // Used array to find average between 4 shifting Volt values
-
-    if (V_average >= 0.01) {
-      eDispState = DS_PRESENT;
-    } 
-    else {
-      eDispState = DS_ABSENT;
-    }
-  }
-  else if (eDispState == DS_PRESENT) {
-    Serial.print(V_value); // removed offset from the original equation: Serial.println((5.0/1024)*20*A_pos+offset);
-    Serial.print(",");
-    Serial.print(4.0);
-    Serial.print(",");
-    Serial.println(V_average);
-
-    PT_SEM_WAIT(disp, &semTouch);
-    // Check if event is already sent or "posted", but also check that confirmation is already set to true, then turn off confirmation.
-    // Before a new (or updated) event can be posted to Brain, it must first clear the confirmation flag from Brain
-    if ( (ipc_comms & MASK_IPC_Touch_To_Brain) && (ipc_comms & MASK_IPC_Brain_Read_Confirmation) ) { // The last event was consumed; solution to above comment
-      ipc_comms &= ~MASK_IPC_Brain_Read_Confirmation;
-    }
-    Post_Touch_Event_to_Brain();
-    bPresent = true;
-    // digitalWrite(LED_BUILTIN, HIGH); // Touch sending (HGH)
-    PORTB |= (1 << 5);
-    PT_SEM_SIGNAL(disp,&semTouch);
-
-    PT_YIELD(disp);
-
-    if (bKick_Again) {
-      bKick_Start = true;
-      bKick_Again = false;
-    }
-
-    eDispState = DS_WAIT;
-  }
-  else if (eDispState == DS_ABSENT) {
-    Serial.print(0.0);
-    Serial.print(",");
-    Serial.print(5.0);
-    Serial.print(",");
-    Serial.println(V_average);
-    PT_SEM_WAIT(disp, &semTouch);
-    // Before a new (or updated) event can be posted to Brain, it must first clear the confirmation flag from Brain
-    if ( (ipc_comms & MASK_IPC_Touch_To_Brain) && (ipc_comms & MASK_IPC_Brain_Read_Confirmation) ) { // The last event was consumed; solution to above comment
-      ipc_comms &= ~MASK_IPC_Brain_Read_Confirmation;
-    }
-    bPresent = false;
-    
-    Post_Touch_Event_to_Brain();
-    
-    PT_SEM_SIGNAL(disp,&semTouch);
-
-    PT_YIELD(disp);
-    
-    eDispState = DS_WAIT;
-  }
-  else if (eDispState == DS_WAIT) {
-    // PT_WAIT_WHILE(disp, getTicksDuration(prevTime1, millis()) < 10);
-    // PT_WAIT_UNTIL(disp, (millis() - prevTime1) >= 10);
-
-    PT_YIELD(disp);
-
-    if (getTicksDuration(prevTime1, millis()) >= 10) {
+  for (;;)
+  {
+    if (eDispState == DS_INIT) {
+      prevTime1 = millis();
       eDispState = DS_CHECK;
-      // prevTime1 = millis();
-      // PORTB &= ~(1 << 4);
+
     }
-  }
-  // } // forever
+    else if (eDispState == DS_CHECK) {
+      // PORTB |= (1 << 4);
+      PT_SEM_WAIT(disp, &semTouch);
+      if (Check_Available_Brain_Event()) {
+        ipc_comms |= MASK_IPC_Touch_Read_Confirmation; // Touch confirms that it read from brain (turns the bit from 0 to 1)
+        // ipc_comms &= ~MASK_IPC_Brain_To_Touch; // Touch resets the brain event to open for new ones (turns the bit back from 1 to 0 again)
+
+        if ( (bKick == true) && (bKick_Start == false) ) {  // Kick when not already active - (including solenoid reset time)
+          bKick = false;
+          // digitalWrite(LED_BUILTIN, LOW); // Kick execution starts (LOW)
+          bKick_Start = true;
+        }
+        
+        if (bBeastMode == true) {
+          bKick_Again = true;
+        }
+      }
+      PT_SEM_SIGNAL(disp, &semTouch);
+
+      PT_YIELD(disp);
+
+      eDispState = DS_PRINT;
+    }
+    else if (eDispState == DS_PRINT) {
+      Serial.print(5);
+      Serial.print(",");
+      Serial.print(0);
+      Serial.print(",");
+      
+      V_value = (5.0/1024)*29*A_pos;
+      V_average = (V_datapoints[0] + V_datapoints[1] + V_datapoints[2] + V_datapoints[3]) / 4.0; // Used array to find average between 4 shifting Volt values
+
+      if (V_average >= 0.01) {
+        eDispState = DS_PRESENT;
+      } 
+      else {
+        eDispState = DS_ABSENT;
+      }
+    }
+    else if (eDispState == DS_PRESENT) {
+      Serial.print(V_value); // removed offset from the original equation: Serial.println((5.0/1024)*20*A_pos+offset);
+      Serial.print(",");
+      Serial.print(4.0);
+      Serial.print(",");
+      Serial.println(V_average);
+
+      PT_SEM_WAIT(disp, &semTouch);
+      // Check if event is already sent or "posted", but also check that confirmation is already set to true, then turn off confirmation.
+      // Before a new (or updated) event can be posted to Brain, it must first clear the confirmation flag from Brain
+      if ( (ipc_comms & MASK_IPC_Touch_To_Brain) && (ipc_comms & MASK_IPC_Brain_Read_Confirmation) ) { // The last event was consumed; solution to above comment
+        ipc_comms &= ~MASK_IPC_Brain_Read_Confirmation;
+      }
+      Post_Touch_Event_to_Brain();
+      bPresent = true;
+      // digitalWrite(LED_BUILTIN, HIGH); // Touch sending (HGH)
+      PORTB |= (1 << 5);
+      PT_SEM_SIGNAL(disp,&semTouch);
+
+      PT_YIELD(disp);
+
+      if (bKick_Again) {
+        bKick_Start = true;
+        bKick_Again = false;
+      }
+
+      eDispState = DS_WAIT;
+    }
+    else if (eDispState == DS_ABSENT) {
+      Serial.print(0.0);
+      Serial.print(",");
+      Serial.print(5.0);
+      Serial.print(",");
+      Serial.println(V_average);
+      PT_SEM_WAIT(disp, &semTouch);
+      // Before a new (or updated) event can be posted to Brain, it must first clear the confirmation flag from Brain
+      if ( (ipc_comms & MASK_IPC_Touch_To_Brain) && (ipc_comms & MASK_IPC_Brain_Read_Confirmation) ) { // The last event was consumed; solution to above comment
+        ipc_comms &= ~MASK_IPC_Brain_Read_Confirmation;
+      }
+      bPresent = false;
+      
+      Post_Touch_Event_to_Brain();
+      
+      PT_SEM_SIGNAL(disp,&semTouch);
+
+      PT_YIELD(disp);
+      
+      eDispState = DS_WAIT;
+    }
+    else if (eDispState == DS_WAIT) {
+      // PT_WAIT_WHILE(disp, getTicksDuration(prevTime1, millis()) < 10);
+      // PT_WAIT_UNTIL(disp, (millis() - prevTime1) >= 10);
+
+      PT_YIELD(disp);
+
+      if (getTicksDuration(prevTime1, millis()) >= 10) {
+        eDispState = DS_CHECK;
+        // prevTime1 = millis();
+        // PORTB &= ~(1 << 4);
+      }
+    }
+  } // forever
 
   PT_END(disp);
 }
@@ -293,8 +309,8 @@ static int threadKick(struct pt* sol) // Worker Thread
 {
   PT_BEGIN(sol);
 
-  // for (;;)
-  // {
+  for (;;)
+  {
     PT_WAIT_UNTIL(sol, bKick_Start);
     // digitalWrite(SOLENOID_PIN, HIGH);
     PORTB |= (1 << 4);
@@ -306,7 +322,7 @@ static int threadKick(struct pt* sol) // Worker Thread
     PORTB &= ~(1 << 4);
     // digitalWrite(SOLENOID_PIN, LOW);
     bKick_Start = false;
-  // }
+  }
 
   PT_END(sol);
 }
@@ -317,8 +333,8 @@ static int threadMain(struct pt* brain)
   
   digitalWrite(LED_BUILTIN, LOW); // Initial state
   
-  // for(;;)
-  // {
+  for(;;)
+  {
     PT_SEM_WAIT(brain, &semTouch);
     if ( Check_Available_Touch_Event() ) {  // New event found!
       ipc_comms |= MASK_IPC_Brain_Read_Confirmation;  // Confirm the event
@@ -341,7 +357,7 @@ static int threadMain(struct pt* brain)
     prevTime3 = millis();
     // PT_WAIT_WHILE(brain, getTicksDuration(prevTime3, millis()) < 1);
     PT_WAIT_UNTIL(brain, (millis() - prevTime3) >= 1);
-  // }
+  }
   
   PT_END(brain);
 }
