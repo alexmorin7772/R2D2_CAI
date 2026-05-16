@@ -5,7 +5,7 @@ unsigned long ball_start_millis;
 int ball_distance(struct pt* pt) {
   PT_BEGIN(pt);
   for (;;) {
-    //Serial.print("Ball state: ");
+    //Serial.print(F("Ball state: "));
     //Serial.println(ball_state);
     if (ball_state == start) {
       ball_start_millis = millis();
@@ -17,7 +17,7 @@ int ball_distance(struct pt* pt) {
       ball_state = test_for_object;
       //initialize everything and test for ball
     } else if (ball_state == test_for_object) {
-      //Serial.println("Ball started!");
+      //Serial.println(F("Ball started!"));
       //failure leads to checking the time
       if (!huskylens.request() or !huskylens.countBlocks(BALL_ID)) ball_state = check_time;
       else ball_state = evaluate_distance;
@@ -41,14 +41,14 @@ int ball_distance(struct pt* pt) {
       ball_turn_angle = angle_finder(result.xCenter);
       ball_leftmost_x = result.xCenter - result.width / 2;
       ball_rightmost_x = result.xCenter + result.width / 2;
-      Serial.print("Ball distance: ");
+      Serial.print(F("Ball distance: "));
       Serial.println(ball_current_distance);
-      Serial.print("Location: (");
+      Serial.print(F("Location: ("));
       Serial.print(ball_location.x);
-      Serial.print(", ");
+      Serial.print(F(", "));
       Serial.print(ball_location.y);
-      Serial.println(")");
-      Serial.print("Ball angle: ");
+      Serial.println(F(")"));
+      Serial.print(F("Ball angle: "));
       Serial.println(ball_turn_angle * RAD_TO_DEG);
       //take control of the results struct
       PT_SEM_WAIT(pt, &sem_ball);
@@ -60,9 +60,9 @@ int ball_distance(struct pt* pt) {
       ball_state = finish; //successfully found the distance, so go to finish
     } else if (ball_state == finish) {
       //debug prints for the semaphore and shared flags
-      Serial.print("Ball semaphore value: ");
+      Serial.print(F("Ball semaphore value: "));
       Serial.println(sem_ball.count);
-      Serial.print("Ball confidence: ");
+      Serial.print(F("Ball confidence: "));
       Serial.println(ipc_comms & BALL_CONFIDENCE);
       ball_state = start;
       PT_SLEEP(pt, 1000);

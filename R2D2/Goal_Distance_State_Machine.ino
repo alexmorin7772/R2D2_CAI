@@ -5,7 +5,7 @@ unsigned long goal_start_millis;
 int goal_distance(struct pt* pt) {
   PT_BEGIN(pt);
   for (;;) {
-    //Serial.print("Goal state: ");
+    //Serial.print(F("Goal state: "));
     //Serial.println(goal_state);
     if (goal_state == start) {
       goal_start_millis = millis();
@@ -17,7 +17,7 @@ int goal_distance(struct pt* pt) {
       goal_state = test_for_object;
       //initialize everything and test for goal
     } else if (goal_state == test_for_object) {
-      //Serial.println("Goal started!");
+      //Serial.println(F("Goal started!"));
       //failure leads to checking the time
       if (!huskylens.request() or !huskylens.countBlocks(GOAL_ID)) goal_state = check_time;
       else goal_state = evaluate_distance;
@@ -41,14 +41,14 @@ int goal_distance(struct pt* pt) {
       goal_turn_angle = angle_finder(result.xCenter);
       goal_leftmost_x = result.xCenter - result.width / 2;
       goal_rightmost_x = result.xCenter + result.width / 2;
-      Serial.print("Goal distance: ");
+      Serial.print(F("Goal distance: "));
       Serial.println(goal_current_distance);
-      Serial.print("Location: (");
+      Serial.print(F("Location: ("));
       Serial.print(goal_location.x);
-      Serial.print(", ");
+      Serial.print(F(", "));
       Serial.print(goal_location.y);
-      Serial.println(")");
-      Serial.print("Goal angle: ");
+      Serial.println(F(")"));
+      Serial.print(F("Goal angle: "));
       Serial.println(goal_turn_angle * RAD_TO_DEG);
       //take control of the results struct
       PT_SEM_WAIT(pt, &sem_goal);
@@ -60,9 +60,9 @@ int goal_distance(struct pt* pt) {
       goal_state = finish; //successfully found the distance, so go to finish
     } else if (goal_state == finish) {
       //debug prints for the semaphore and shared flags
-      Serial.print("Goal semaphore value: ");
+      Serial.print(F("Goal semaphore value: "));
       Serial.println(sem_goal.count);
-      Serial.print("Goal confidence: ");
+      Serial.print(F("Goal confidence: "));
       Serial.println(static_cast<bool>(ipc_comms & GOAL_CONFIDENCE));
       goal_state = start;
       PT_SLEEP(pt, 1000);
