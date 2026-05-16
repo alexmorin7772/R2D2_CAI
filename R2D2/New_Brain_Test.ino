@@ -78,6 +78,9 @@ motor_data current_motor_data = {-1, -1, idle}; //start by being idle
 
 int update_motor_state(struct pt *pt) {
   PT_BEGIN(pt);
+  if (ball_results.object_found) {
+    Serial.println(F("I CAN SEE THE BALL **"));
+  }
   for(;;) {
     between_posts = (goal_results.object_found) && (goal_results.leftmost_x <= CENTER_X) && (goal_results.rightmost_x >= CENTER_X);
     centered_on_goal = (goal_results.object_found) && (abs(goal_results.object_location.x - CENTER_X) <= GOAL_OFFSET_X);
@@ -88,24 +91,31 @@ int update_motor_state(struct pt *pt) {
     if (!ball_results.object_found && !bPresent) {
       //we don't have/know where the ball is, so we search for it
       current_motor_state = search;
+      //Serial.println(F("search"));
     } else if (!ball_results.object_found && bPresent && !goal_results.object_found) {
       //we have the ball but have to search for the goal
       current_motor_state = search;
+      //Serial.println(F("search"));
     } else if (!ball_results.object_found && bPresent && goal_results.object_found && !aligned_on_goal) {
       //we have the ball and see the goal but are not aligned
       current_motor_state = align_on_goal;
+      //Serial.println(F("search"));
     } else if (!ball_results.object_found && bPresent && goal_results.object_found && aligned_on_goal && goal_results.object_distance < MAX_GOAL_DISTANCE) {
       //we have the ball, are aligned on the goal, and are close enough
       current_motor_state = kick;
+      //Serial.println(F("search"));
     } else if (!ball_results.object_found && bPresent && goal_results.object_found && aligned_on_goal) {
       //we have and ball and are aligned on the goal
       current_motor_state = go_to_goal;
+      //Serial.println(F("search"));
     } else if (ball_results.object_found && !bPresent && !aligned_on_ball) {
       //we see the ball but are not aligned
       current_motor_state = align_on_ball;
+      //Serial.println(F("search"));
     } else if (ball_results.object_found && !bPresent && aligned_on_ball) {
       //we see the ball and are aligned
       current_motor_state = go_to_ball;
+      //Serial.println(F("search"));
     }
     PT_SLEEP(pt, 1);
   }
