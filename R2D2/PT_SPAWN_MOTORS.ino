@@ -89,7 +89,7 @@ static int threadMotorManager(struct pt *pt) {
     if (mainState == msInit) {
       mainState = msFlagCheck;
     }
-    else if (mainState ==msFlagCheck) {
+    else if (mainState == msFlagCheck) {
       // 1) Check bitflags for new task signal (Logic -> Motor)
       PT_SEM_WAIT(pt, &sem_ipc); //set local flags for things that i am looking for
        //copy the logic/motor to local flag
@@ -120,10 +120,11 @@ static int threadMotorManager(struct pt *pt) {
       PT_WAIT_WHILE(pt, bMotor);
       //Serial.println("not bmotor");
       PT_SEM_WAIT(pt, &sem_ipc);
-      //Serial.println("checking for normal flag");
+      Serial.println(F("checking for normal flag"));
       COPY_NEWDATA = (ipc_comms & MASK_IPC_Brain_To_Motor);
       if (COPY_NEWDATA) {
         //Serial.println("clearing brain->motor");
+        Serial.println(F("normal flag found: executing command"));
         ipc_comms &= ~MASK_IPC_Brain_To_Motor;
         ipc_comms |= MASK_IPC_Motor_Read_Confirm;
         ipc_comms |= MASK_MOTOR_MOVING;
@@ -193,7 +194,10 @@ static int threadMotorWorker(struct pt *pt) {
       }
     }
 
-    
+    Serial.println(moveTime);
+    Serial.println(tempX);
+    Serial.println(tempA);
+
     if (COPY_SPEED) {
       speedconst = fastspeedconst;
     } else {
@@ -201,9 +205,9 @@ static int threadMotorWorker(struct pt *pt) {
     }
 
     TmrStart = millis();
-    TmrDur = moveTime;
+    TmrDur = moveTime + 1;
 
-    Serial.println("begin moving");
+    Serial.println(F("begin moving"));
 
     if (runMode == drive_forward) {
       forward(motor1, motor2, speedconst);
@@ -215,12 +219,13 @@ static int threadMotorWorker(struct pt *pt) {
       left(motor1, motor2, 2*speedconst);
     }
 
-    Serial.println("moving");
+    Serial.println(F("moving"));
     PT_SPAWN(pt, &ptTimerSpawn, threadTimer_MotorWait(&ptTimerSpawn));
 
     digitalWrite(LED_BUILTIN, LOW);
 
     brake(motor1, motor2);
+    Serial.println(F("done moving"));
     //Tell ipc comms movement stopped
     bMotor = false;
     //PT_YIELD(pt);
@@ -235,7 +240,7 @@ int threadTimer_MotorWait(struct pt *move)
   // mark the beginnning of the kick wait thread
   PT_BEGIN(move);
 
-  PT_WAIT_UNTIL(move, getTicksDuration(TmrStart, millis()) >= TmrDur || (ipc_comms & MASK_OVERRIDE_FLAG)); // One tick is 1 milliseconds
+  PT_WAIT_UNTIL(move, (getTicksDuration(TmrStart, millis()) >= TmrDur) || (ipc_comms & MASK_OVERRIDE_FLAG)); // One tick is 1 milliseconds
   //brain needs to send payload then send override so that i am not executing old data
   PT_EXIT(move);
 

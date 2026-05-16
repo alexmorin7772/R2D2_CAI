@@ -7,7 +7,7 @@
 #define MASK_IPC_Brain_To_Touch            0x00800000
 
 #define MASK_IPC_Motor_Read_Confirm     0x00000100
-#define MASK_IPC_Brain_To_Motor 0x00001000
+#define MASK_OVERRIDE_FLAG 0x00001000
 #define MASK_MOTOR_MOVING 0x00000200
 #define MASK_OVERRIDE_SEEN 0x00000400
 #define MASK_OVERRIDE_FLAG 0x00002000
@@ -70,7 +70,7 @@ motor_data current_motor_data = {-1, -1, idle}; //start by being idle
 int update_motor_state(struct pt *pt) {
   PT_BEGIN(pt);
   for(;;) {
-    Serial.println(current_motor_state);
+    //Serial.println(current_motor_state);
     between_posts = (goal_results.object_found) && (goal_results.leftmost_x <= CENTER_X) && (goal_results.rightmost_x >= CENTER_X);
     centered_on_goal = (goal_results.object_found) && (abs(goal_results.object_location.x - CENTER_X) <= GOAL_OFFSET_X);
     aligned_on_goal = between_posts;
@@ -80,19 +80,19 @@ int update_motor_state(struct pt *pt) {
     if (!ball_results.object_found && !bPresent) {
       //we don't have/know where the ball is, so we search for it
       current_motor_state = search;
-      Serial.println(F("search"));
+      //Serial.println(F("search"));
     } else if (!ball_results.object_found && bPresent && !goal_results.object_found) {
       //we have the ball but have to search for the goal
       current_motor_state = search;
-      Serial.println(F("search"));
+      //Serial.println(F("search"));
     } else if (!ball_results.object_found && bPresent && goal_results.object_found && !aligned_on_goal) {
       //we have the ball and see the goal but are not aligned
       current_motor_state = align_on_goal;
-      Serial.println(F("align_on_goal"));
+      //Serial.println(F("align_on_goal"));
     } else if (!ball_results.object_found && bPresent && goal_results.object_found && aligned_on_goal && goal_results.object_distance < MAX_GOAL_DISTANCE) {
       //we have the ball, are aligned on the goal, and are close enough
       current_motor_state = kick;
-      Serial.println(F("kick"));
+      //Serial.println(F("kick"));
     } else if (!ball_results.object_found && bPresent && goal_results.object_found && aligned_on_goal) {
       //we have and ball and are aligned on the goal
       current_motor_state = go_to_goal;
@@ -104,7 +104,7 @@ int update_motor_state(struct pt *pt) {
     } else if (ball_results.object_found && !bPresent && aligned_on_ball) {
       //we see the ball and are aligned
       current_motor_state = go_to_ball;
-      Serial.println(F("go_to_ball"));
+      //Serial.println(F("go_to_ball"));
     } else {
       Serial.println(F("**************"));
     }
@@ -115,34 +115,76 @@ int update_motor_state(struct pt *pt) {
 
 int update_motor_data(struct pt *pt) {
   PT_BEGIN(pt);
+  PT_SEM_WAIT(pt, &sem_ipc);
+  ipc_comms |= MASK_SPEED;
+  PT_SEM_SIGNAL(pt, &sem_ipc);
   for(;;) {
     if (current_motor_state == kick) {
       //activate solenoid here
     } else if (current_motor_state == search) {
       PT_SEM_WAIT(pt, &sem_motor);
       current_motor_data.action = turn_left;
-      current_motor_data.turn_angle = 68;
+      current_motor_data.turn_angle = 34;
+      current_motor_data.object_distance = 0;
       PT_SEM_SIGNAL(pt, &sem_motor);
+      
+      PT_SEM_WAIT(pt, &sem_ipc);
+      ipc_comms |= MASK_OVERRIDE_FLAG;
+      PT_SEM_SIGNAL(pt, &sem_ipc);
     } else if (current_motor_state == align_on_ball) {
+      //PT_WAIT_UNTIL(pt, ball_results.is_most_recent);
+      //ball_results.is_most_recent = false;
+
       PT_SEM_WAIT(pt, &sem_motor);
       if (ball_results.object_turn_angle < 0) current_motor_data.action = turn_left;
       else current_motor_data.action = turn_right;
       current_motor_data.turn_angle = abs(ball_results.object_turn_angle * RAD_TO_DEG);
+      current_motor_data.object_distance = 0;
       PT_SEM_SIGNAL(pt, &sem_motor);
+
+      PT_SEM_WAIT(pt, &sem_ipc);
+      ipc_comms |= MASK_OVERRIDE_FLAG;
+      PT_SEM_SIGNAL(pt, &sem_ipc);
+
     } else if (current_motor_state == align_on_goal) {
+      //PT_WAIT_UNTIL(pt, goal_results.is_most_recent);
+      //goal_results.is_most_recent = false;
+
       PT_SEM_WAIT(pt, &sem_motor);
       if (goal_results.object_turn_angle < 0) current_motor_data.action = turn_left;
       else current_motor_data.action = turn_right;
       current_motor_data.turn_angle = abs(goal_results.object_turn_angle * RAD_TO_DEG);
+      current_motor_data.object_distance = 0;
       PT_SEM_SIGNAL(pt, &sem_motor);
+
+      PT_SEM_WAIT(pt, &sem_ipc);
+      ipc_comms |= MASK_OVERRIDE_FLAG;
+      PT_SEM_SIGNAL(pt, &sem_ipc);
     } else if (current_motor_state == go_to_ball) {
+      //PT_WAIT_UNTIL(pt, ball_results.is_most_recent);
+      //ball_results.is_most_recent = false;
+
       PT_SEM_WAIT(pt, &sem_motor);
       current_motor_data.action = drive_forward;
+      current_motor_data.object_distance = ball_results.object_distance;
+      current_motor_data.turn_angle = 0;
       PT_SEM_SIGNAL(pt, &sem_motor);
+
+      PT_SEM_WAIT(pt, &sem_ipc);
+      ipc_comms |= MASK_OVERRIDE_FLAG;
+      PT_SEM_SIGNAL(pt, &sem_ipc);
     } else if (current_motor_state == go_to_goal) {
+      //PT_WAIT_UNTIL(pt, goal_results.is_most_recent);
+      //goal_results.is_most_recent = false;
+
       PT_SEM_WAIT(pt, &sem_motor);
       current_motor_data.action = drive_forward;
+      current_motor_data.object_distance = goal_results.object_distance;
+      current_motor_data.turn_angle = 0;
       PT_SEM_SIGNAL(pt, &sem_motor);
+      PT_SEM_WAIT(pt, &sem_ipc);
+      ipc_comms |= MASK_OVERRIDE_FLAG;
+      PT_SEM_SIGNAL(pt, &sem_ipc);
     } 
     PT_SLEEP(pt, 1);
   }
