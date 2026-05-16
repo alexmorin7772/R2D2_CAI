@@ -1,3 +1,4 @@
+/*
 typedef enum motorModes {
     rForward = 0,
     rBackward,
@@ -16,3 +17,4 @@ typedef enum BRAIN_STATES {
   msGoalApproach,
   msBallApproach
 } Brain_States;
+*/

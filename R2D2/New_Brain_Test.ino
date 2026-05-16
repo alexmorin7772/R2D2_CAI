@@ -1,4 +1,4 @@
-/*#include <SparkFun_TB6612.h>
+#include <SparkFun_TB6612.h>
 
 #define MASK_IPC_Brain_Read_Confirmation   0x00040000
 #define MASK_IPC_Touch_To_Brain            0x00080000
@@ -30,12 +30,11 @@
 #define BALL_ANGLE_OFFSET 0.09 //0.09 radians is about 5 degrees
 #define MAX_GOAL_DISTANCE 20 //maximum distance the goal can be away for us to kick
 
-pt_sem sem_ipc_comms, sem_motor;
+//pt_sem sem_ipc_comms, sem_motor;
 
 //PT_SEM_INIT(&sem_ipc_comms, 1);
 //make sure this goes into void setup
 
-pt pt_update_motor_state, pt_update_motor_data;
 
 //initialize motors
 Motor motor1 = Motor(AIN1, AIN2, PWMA, OFFSET_A, STBY);
@@ -57,7 +56,7 @@ struct motor_data {
   motor_action action;
 };
 
-bool bPresent = false; //this was just defined so the code would compile without needing Alex's code
+extern volatile boolean bPresent; //this was just defined so the code would compile without needing Alex's code
 //be sure to delete once we merge
 
 bool between_posts = false;
@@ -87,7 +86,7 @@ int update_motor_state(struct pt *pt) {
     aligned_on_ball = abs(ball_results.object_turn_angle) <= BALL_ANGLE_OFFSET;
 
     if (!ball_results.object_found && !bPresent) {
-      //we have don't know where the ball is, so we search for it
+      //we don't have/know where the ball is, so we search for it
       current_motor_state = search;
     } else if (!ball_results.object_found && bPresent && !goal_results.object_found) {
       //we have the ball but have to search for the goal
@@ -148,4 +147,3 @@ int update_motor_data(struct pt *pt) {
   }
   PT_END(pt);
 }
-*/

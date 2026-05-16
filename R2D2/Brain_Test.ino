@@ -1,4 +1,4 @@
-#include "protothreads.h"
+/*#include "protothreads.h"
 #include "SoftwareSerial.h"
 #include "HUSKYLENS.h"
 #include <Wire.h>
@@ -58,7 +58,7 @@ typedef enum Brain_States {
   msBallApproach
 };
 Brain_States 
-*/
+
 #define MASK_IPC_Brain_Read_Confirmation   0x00040000 // same as 0b 0000 0000 0000 0100 0000 0000 0000 0000 - Same as Touch confirming that it read from Brain
 #define MASK_IPC_Touch_To_Brain            0x00080000 // same as 0b 0000 0000 0000 1000 0000 0000 0000 0000
 
@@ -211,3 +211,4 @@ int threadActuator(struct pt *pt) {
     }
     PT_END(pt);
 }
+*/

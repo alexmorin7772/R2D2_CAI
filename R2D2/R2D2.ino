@@ -65,8 +65,9 @@ pt pt_ball_distance;
 pt pt_goal_distance;
 pt pt_line_tracking;
 pt pt_lens_adjustment;
-pt ptBrain;
-pt ptActuator;
+pt pt_update_motor_state;
+pt pt_update_motor_data;
+
 extern volatile pt solKick;
 extern volatile pt ptAlex_test;
 extern volatile pt readPos, adcDisp;
@@ -191,8 +192,8 @@ void setup() {
   PT_INIT(&pt_goal_distance);
   PT_INIT(&pt_line_tracking);
   PT_INIT(&pt_lens_adjustment);
-  PT_INIT(&ptBrain);
-  PT_INIT(&ptActuator);
+  PT_INIT(&pt_update_motor_state);
+  PT_INIT(&pt_update_motor_data);
   PT_SEM_INIT(&sem_ball, 1);
   PT_SEM_INIT(&sem_goal, 1);
   PT_SEM_INIT(&sem_line, 1);
@@ -213,8 +214,8 @@ void loop() {
   PT_SCHEDULE(goal_distance(&pt_goal_distance));
   PT_SCHEDULE(line_tracking(&pt_line_tracking));
   PT_SCHEDULE(lens_adjustment(&pt_lens_adjustment));
-  PT_SCHEDULE(threadBrain(&ptBrain));
-  PT_SCHEDULE(threadActuator(&ptActuator));
+  PT_SCHEDULE(update_motor_state(&pt_update_motor_state));
+  PT_SCHEDULE(update_motor_data(&pt_update_motor_data));
   PT_SCHEDULE(threadADCRead(&readPos));
   PT_SCHEDULE(threadDisplay(&adcDisp));
   PT_SCHEDULE(threadKick(&solKick));
