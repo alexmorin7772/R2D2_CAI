@@ -58,6 +58,9 @@ The following are all defined constants
 #define GOAL_CONFIDENCE 0b10
 #define LINE_CONFIDENCE 0b100
 #define FOCAL_LENGTH 234 //focal length of camera
+#define BALL_ID 1
+#define GOAL_ID 2
+//huskylens IDs for the ball and the goal
 
 //Create all protothread structs
 //pt ptHuskylens;
@@ -205,6 +208,7 @@ void setup() {
   PT_SEM_INIT(&sem_motor, 1);
   myservo.attach(9);  // attaches the servo on pin 9 to the Servo object
   while (!huskylens.begin(Wire)) Serial.println(F("Begin failed!"));
+  huskylens.writeAlgorithm(ALGORITHM_COLOR_RECOGNITION);
   // huskyAlgorithm();   // Huskylens - Vision.ino
   // motorSetup();       // Motor Driver - 
   // groveDLSsetup();    // Light Sensor - 
@@ -216,7 +220,8 @@ void loop() {
   //PT_SCHEDULE(huskyRead(&ptHuskylens));
   PT_SCHEDULE(ball_distance(&pt_ball_distance));
   PT_SCHEDULE(goal_distance(&pt_goal_distance));
-  PT_SCHEDULE(line_tracking(&pt_line_tracking));
+  //PT_SCHEDULE(line_tracking(&pt_line_tracking));
+  //do not uncomment as line tracking could mess with other Huskylens algorithms
   PT_SCHEDULE(lens_adjustment(&pt_lens_adjustment));
   PT_SCHEDULE(update_motor_state(&pt_update_motor_state));
   PT_SCHEDULE(update_motor_data(&pt_update_motor_data));

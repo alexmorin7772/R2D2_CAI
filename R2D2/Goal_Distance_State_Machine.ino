@@ -12,15 +12,14 @@ int goal_distance(struct pt* pt) {
       goal_state = initialization;
       //have to go to initialization
     } else if (goal_state == initialization) {
-      huskylens.writeAlgorithm(ALGORITHM_COLOR_RECOGNITION);
+      //huskylens.writeAlgorithm(ALGORITHM_COLOR_RECOGNITION);
+      //no longer needed since color recognition is the only algorithm used
       goal_state = test_for_object;
       //initialize everything and test for goal
     } else if (goal_state == test_for_object) {
       //Serial.println("Goal started!");
       //failure leads to checking the time
-      if (!huskylens.request()) goal_state = check_time;
-      else if (!huskylens.isLearned()) goal_state = check_time;
-      else if (!huskylens.available()) goal_state = check_time;
+      if (!huskylens.request() or !huskylens.countBlocks(GOAL_ID)) goal_state = check_time;
       else goal_state = evaluate_distance;
       //otherwise find the distance
     } else if (goal_state == check_time) {
@@ -35,38 +34,35 @@ int goal_distance(struct pt* pt) {
         goal_state = finish;
       } else goal_state = test_for_object;
     } else if (goal_state == evaluate_distance) {
-      HUSKYLENSResult result = huskylens.read();
-      if (result.command != COMMAND_RETURN_BLOCK) goal_state = initialization; //if initialization somehow went wrong
-      else {
-        goal_height = static_cast<float>(result.height);
-        goal_current_distance = (GOAL_SIZE_30 * 30) / goal_height;
-        goal_location = {result.xCenter, result.yCenter};
-        goal_turn_angle = angle_finder(result.xCenter);
-        goal_leftmost_x = result.xCenter - result.width / 2;
-        goal_rightmost_x = result.xCenter + result.width / 2;
-        Serial.print(F("Goal distance: "));
-        Serial.println(goal_current_distance);
-        Serial.print(F("Location: ("));
-        Serial.print(goal_location.x);
-        Serial.print(", ");
-        Serial.print(goal_location.y);
-        Serial.println(")");
-        Serial.print(F("Goal angle: "));
-        Serial.println(goal_turn_angle * RAD_TO_DEG);
-        //take control of the results struct
-        PT_SEM_WAIT(pt, &sem_goal);
-        update_goal_results(goal_results);
-        //change the confidence bit to 1 (confident)
-        ipc_comms |= GOAL_CONFIDENCE;
-        //allow other threads to read the results struct
-        PT_SEM_SIGNAL(pt, &sem_goal);
-        goal_state = finish; //successfully found the distance, so go to finish
-      }
+      HUSKYLENSResult result = huskylens.getBlock(GOAL_ID, 0); //the 0 means the first block with that ID
+      goal_height = static_cast<float>(result.height);
+      goal_current_distance = (GOAL_SIZE_30 * 30) / goal_height;
+      goal_location = {result.xCenter, result.yCenter};
+      goal_turn_angle = angle_finder(result.xCenter);
+      goal_leftmost_x = result.xCenter - result.width / 2;
+      goal_rightmost_x = result.xCenter + result.width / 2;
+      Serial.print("Goal distance: ");
+      Serial.println(goal_current_distance);
+      Serial.print("Location: (");
+      Serial.print(goal_location.x);
+      Serial.print(", ");
+      Serial.print(goal_location.y);
+      Serial.println(")");
+      Serial.print("Goal angle: ");
+      Serial.println(goal_turn_angle * RAD_TO_DEG);
+      //take control of the results struct
+      PT_SEM_WAIT(pt, &sem_goal);
+      update_goal_results(goal_results);
+      //change the confidence bit to 1 (confident)
+      ipc_comms |= GOAL_CONFIDENCE;
+      //allow other threads to read the results struct
+      PT_SEM_SIGNAL(pt, &sem_goal);
+      goal_state = finish; //successfully found the distance, so go to finish
     } else if (goal_state == finish) {
       //debug prints for the semaphore and shared flags
-      Serial.print(F("Goal semaphore value: "));
+      Serial.print("Goal semaphore value: ");
       Serial.println(sem_goal.count);
-      Serial.print(F("Goal confidence: "));
+      Serial.print("Goal confidence: ");
       Serial.println(static_cast<bool>(ipc_comms & GOAL_CONFIDENCE));
       goal_state = start;
       PT_SLEEP(pt, 1000);
@@ -81,7 +77,6 @@ int goal_distance(struct pt* pt) {
       //goal_state doesn't match anything
       goal_state = initialization;
     }
-    PT_SLEEP(pt, 1);
   }
   PT_END(pt);
 }
