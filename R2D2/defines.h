@@ -18,3 +18,17 @@ typedef enum BRAIN_STATES {
   msBallApproach
 } Brain_States;
 */
+typedef enum motor_action {
+  drive_forward,
+  drive_backward, //not sure if we will need this or not
+  turn_left,
+  turn_right,
+  idle
+} runMode_t;
+
+//data the motor uses
+struct motor_data {
+  float object_distance;
+  float turn_angle;
+  motor_action action;
+};

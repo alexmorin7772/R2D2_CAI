@@ -1,4 +1,5 @@
 #include <SparkFun_TB6612.h>
+#include "defines.h"
 
 #define MASK_IPC_Brain_Read_Confirmation   0x00040000
 #define MASK_IPC_Touch_To_Brain            0x00080000
@@ -12,16 +13,6 @@
 #define MASK_OVERRIDE_FLAG 0x00002000
 #define MASK_SPEED 0x00004000
 
-#define AIN1 -1
-#define BIN1 -1
-#define AIN2 -1
-#define BIN2 -1
-#define PWMA -1
-#define PWMB -1
-#define STBY -1
-//agree on pins to use for motors
-#define OFFSET_A 1
-#define OFFSET_B 1
 //numbers to multiply speed by
 
 #define CENTER_X 160
@@ -37,9 +28,9 @@
 
 
 //initialize motors
-Motor motor1 = Motor(AIN1, AIN2, PWMA, OFFSET_A, STBY);
-Motor motor2 = Motor(BIN1, BIN2, PWMB, OFFSET_B, STBY);
-
+//Motor motor1 = Motor(AIN1, AIN2, PWMA, OFFSET_A, STBY);
+//Motor motor2 = Motor(BIN1, BIN2, PWMB, OFFSET_B, STBY);
+/*
 //possible actions the motors could be doing
 enum motor_action {
   drive_forward,
@@ -54,7 +45,7 @@ struct motor_data {
   float object_distance;
   float turn_angle;
   motor_action action;
-};
+};*/
 
 extern volatile boolean bPresent; //this was just defined so the code would compile without needing Alex's code
 //be sure to delete once we merge
@@ -91,31 +82,31 @@ int update_motor_state(struct pt *pt) {
     if (!ball_results.object_found && !bPresent) {
       //we don't have/know where the ball is, so we search for it
       current_motor_state = search;
-      //Serial.println(F("search"));
+      Serial.println(F("search"));
     } else if (!ball_results.object_found && bPresent && !goal_results.object_found) {
       //we have the ball but have to search for the goal
       current_motor_state = search;
-      //Serial.println(F("search"));
+      Serial.println(F("search"));
     } else if (!ball_results.object_found && bPresent && goal_results.object_found && !aligned_on_goal) {
       //we have the ball and see the goal but are not aligned
       current_motor_state = align_on_goal;
-      //Serial.println(F("search"));
+      Serial.println(F("align_on_goal"));
     } else if (!ball_results.object_found && bPresent && goal_results.object_found && aligned_on_goal && goal_results.object_distance < MAX_GOAL_DISTANCE) {
       //we have the ball, are aligned on the goal, and are close enough
       current_motor_state = kick;
-      //Serial.println(F("search"));
+      Serial.println(F("kick"));
     } else if (!ball_results.object_found && bPresent && goal_results.object_found && aligned_on_goal) {
       //we have and ball and are aligned on the goal
       current_motor_state = go_to_goal;
-      //Serial.println(F("search"));
+      //Serial.println(F("go_to_goal"));
     } else if (ball_results.object_found && !bPresent && !aligned_on_ball) {
       //we see the ball but are not aligned
       current_motor_state = align_on_ball;
-      //Serial.println(F("search"));
+      //Serial.println(F("align_on_ball"));
     } else if (ball_results.object_found && !bPresent && aligned_on_ball) {
       //we see the ball and are aligned
       current_motor_state = go_to_ball;
-      //Serial.println(F("search"));
+      //Serial.println(F("go_to_ball"));
     }
     PT_SLEEP(pt, 1);
   }

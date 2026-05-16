@@ -67,6 +67,8 @@ pt pt_line_tracking;
 pt pt_lens_adjustment;
 pt pt_update_motor_state;
 pt pt_update_motor_data;
+pt ptManager;
+pt ptWorker;
 
 extern volatile pt solKick;
 extern volatile pt ptAlex_test;
@@ -194,6 +196,8 @@ void setup() {
   PT_INIT(&pt_lens_adjustment);
   PT_INIT(&pt_update_motor_state);
   PT_INIT(&pt_update_motor_data);
+  PT_INIT(&ptManager);
+  PT_INIT(&ptWorker);
   PT_SEM_INIT(&sem_ball, 1);
   PT_SEM_INIT(&sem_goal, 1);
   PT_SEM_INIT(&sem_line, 1);
@@ -220,4 +224,6 @@ void loop() {
   PT_SCHEDULE(threadDisplay(&adcDisp));
   PT_SCHEDULE(threadKick(&solKick));
   PT_SCHEDULE(threadMain(&ptAlex_test));
+  PT_SCHEDULE(threadMotorWorker(&ptWorker));
+  PT_SCHEDULE(threadMotorManager(&ptManager));
 }
