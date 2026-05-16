@@ -37,6 +37,14 @@ int ball_distance(struct pt* pt) {
       //allow other threads to read the results struct
       PT_SEM_SIGNAL(pt, &sem_ball);
       ball_state = finish; //successfully found the distance, so go to finish
+   } else if (ball_state == fail) {
+      PT_SEM_WAIT(pt, &sem_ball);
+      //change the confidence bit to 0 (not confident)
+      ipc_comms &= ~BALL_CONFIDENCE;
+      ball_results.is_most_recent = false;
+      ball_results.object_found = false;
+      PT_SEM_SIGNAL(pt, &sem_ball);
+      ball_state = finish;
    } else if (ball_state == finish) {
       //debug prints for the semaphore and shared flags
       Serial.print(F("Ball semaphore value: "));

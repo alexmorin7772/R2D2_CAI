@@ -37,6 +37,14 @@ int goal_distance(struct pt* pt) {
       //allow other threads to read the results struct
       PT_SEM_SIGNAL(pt, &sem_goal);
       goal_state = finish; //successfully found the distance, so go to finish
+   } else if (goal_state == fail) {
+      PT_SEM_WAIT(pt, &sem_goal);
+      //change the confidence bit to 0 (not confident)
+      ipc_comms &= ~GOAL_CONFIDENCE;
+      goal_results.is_most_recent = false;
+      goal_results.object_found = false;
+      PT_SEM_SIGNAL(pt, &sem_goal);
+      goal_state = finish;
    } else if (goal_state == finish) {
       //debug prints for the semaphore and shared flags
       Serial.print(F("Goal semaphore value: "));
