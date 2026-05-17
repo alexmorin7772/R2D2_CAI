@@ -209,22 +209,30 @@ static int threadMotorWorker(struct pt *pt) {
 
     Serial.println(F("begin moving"));
     
-
+    PT_SEM_WAIT(pt, &sem_ipc);
     if (runMode == drive_forward) {
       forward(motor1, motor2, speedconst);
+      ipc_comms |= MASK_MOTOR_MOVING;
     } else if (runMode == drive_backward){
       back(motor1, motor2, speedconst);
+      ipc_comms |= MASK_MOTOR_MOVING;
     } else if (runMode == turn_left){
       right(motor1, motor2, 2*speedconst);
+      ipc_comms |= MASK_MOTOR_MOVING;
     } else if (runMode == turn_right){
       left(motor1, motor2, 2*speedconst);
+      ipc_comms |= MASK_MOTOR_MOVING;
     } else if (runMode == idle){
       brake(motor1, motor2);
     }
+    PT_SEM_SIGNAL(pt, &sem_ipc);
 
     Serial.println(F("moving"));
     PT_SPAWN(pt, &ptTimerSpawn, threadTimer_MotorWait(&ptTimerSpawn));
-                                       
+                               
+    PT_SEM_WAIT(pt, &sem_ipc);
+    ipc_comms &= ~MASK_MOTOR_MOVING;
+    PT_SEM_SIGNAL(pt, &sem_ipc);
 
     digitalWrite(LED_BUILTIN, LOW);
     Serial.println(F("done moving"));
