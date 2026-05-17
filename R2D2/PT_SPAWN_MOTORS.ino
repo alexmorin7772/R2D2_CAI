@@ -200,10 +200,8 @@ static int threadMotorWorker(struct pt *pt) {
       speedconst = slowspeedconst;
     }
 
-    TmrDur = (100 * moveTime) + 10;
-    Serial.println(TmrDur);
-    Serial.println(tempX);
-    Serial.println(tempA);
+    TmrStart = millis();
+    TmrDur = 100 * moveTime + 10;
 
     Serial.println(F("begin moving"));
     
