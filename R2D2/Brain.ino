@@ -1,3 +1,14 @@
+#include <Arduino.h>
+#include "protothreads.h"
+#include <SoftwareSerial.h>
+#include "HUSKYLENS.h"
+#include <Wire.h>
+//#include <Digital_Light_TSL2561.h>
+#include <Servo.h>
+#include "MyObjRec.h"
+#include "defines.h"
+#include "touch.h"
+#include "pt-sem.h"
 // Brain.ino — reads camera and touch data via ipc_comms,
 // decides what the robot should do, writes motor_flags for
 // whatever motor code gets added later.
