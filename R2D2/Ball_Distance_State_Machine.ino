@@ -20,7 +20,7 @@ int ball_distance(struct pt* pt) {
       ball_turn_angle = angle_finder(result.xCenter);
       ball_leftmost_x = result.xCenter - result.width / 2;
       ball_rightmost_x = result.xCenter + result.width / 2;
-      Serial.print(F("Ball distance: "));
+      /*Serial.print(F("Ball distance: "));
       Serial.println(ball_current_distance);
       Serial.print(F("Location: ("));
       Serial.print(ball_location.x);
@@ -28,7 +28,7 @@ int ball_distance(struct pt* pt) {
       Serial.print(ball_location.y);
       Serial.println(F(")"));
       Serial.print(F("Ball angle: "));
-      Serial.println(ball_turn_angle * RAD_TO_DEG);
+      Serial.println(ball_turn_angle * RAD_TO_DEG);*/
       //take control of the results struct
       PT_SEM_WAIT(pt, &sem_ball);
       update_ball_results(ball_results);
