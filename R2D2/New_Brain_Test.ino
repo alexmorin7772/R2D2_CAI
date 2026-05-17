@@ -55,6 +55,8 @@ bool centered_on_goal = false;
 bool aligned_on_goal = false;
 bool aligned_on_ball = false;
 
+bool motor_busy = false;
+
 enum motor_state {
   kick,
   search,
@@ -81,37 +83,37 @@ int update_motor_state(struct pt *pt) {
 
     if (!ball_results.object_found && !bPresent) {
       //we don't have/know where the ball is, so we search for it
-      previous_motor_state = search;
+      previous_motor_state = current_motor_state;
       current_motor_state = search;
       //Serial.println(F("search"));
     } else if (!ball_results.object_found && bPresent && !goal_results.object_found) {
       //we have the ball but have to search for the goal
-      previous_motor_state = search;
+      previous_motor_state = current_motor_state;
       current_motor_state = search;
       //Serial.println(F("search"));
     } else if (!ball_results.object_found && bPresent && goal_results.object_found && !aligned_on_goal) {
       //we have the ball and see the goal but are not aligned
-      previous_motor_state = align_on_goal;
+      previous_motor_state = current_motor_state;
       current_motor_state = align_on_goal;
       //Serial.println(F("align_on_goal"));
     } else if (!ball_results.object_found && bPresent && goal_results.object_found && aligned_on_goal && goal_results.object_distance < MAX_GOAL_DISTANCE) {
       //we have the ball, are aligned on the goal, and are close enough
-      previous_motor_state = kick;
+      previous_motor_state = current_motor_state;
       current_motor_state = kick;
       //Serial.println(F("kick"));
     } else if (!ball_results.object_found && bPresent && goal_results.object_found && aligned_on_goal) {
       //we have and ball and are aligned on the goal
-      previous_motor_state = go_to_goal;
+      previous_motor_state = current_motor_state;
       current_motor_state = go_to_goal;
       //Serial.println(F("go_to_goal"));
     } else if (ball_results.object_found && !bPresent && !aligned_on_ball) {
       //we see the ball but are not aligned
-      previous_motor_state = align_on_ball;
+      previous_motor_state = current_motor_state;
       current_motor_state = align_on_ball;
       //Serial.println(F("align_on_ball"));
     } else if (ball_results.object_found && !bPresent && aligned_on_ball) {
       //we see the ball and are aligned
-      previous_motor_state = go_to_ball;
+      previous_motor_state = current_motor_state;
       current_motor_state = go_to_ball;
       //Serial.println(F("go_to_ball"));
     } else {
@@ -126,6 +128,7 @@ int update_motor_data(struct pt *pt) {
   PT_BEGIN(pt);
   PT_SEM_WAIT(pt, &sem_ipc);
   ipc_comms |= MASK_SPEED;
+  motor_busy = (ipc_comms & MASK_MOTOR_MOVING);
   PT_SEM_SIGNAL(pt, &sem_ipc);
   for(;;) {
     if (current_motor_state == kick) {
@@ -138,7 +141,7 @@ int update_motor_data(struct pt *pt) {
       PT_SEM_SIGNAL(pt, &sem_motor);
       
       PT_SEM_WAIT(pt, &sem_ipc);
-      if (!bMotorBusy || previous_motor_state != current_motor_state) {
+      if (!motor_busy || previous_motor_state != current_motor_state) {
         // send command — either motor is free (normal) or state changed (override)
         if (previous_motor_state != current_motor_state) {
           ipc_comms |= MASK_OVERRIDE_FLAG;
@@ -160,7 +163,7 @@ int update_motor_data(struct pt *pt) {
       PT_SEM_SIGNAL(pt, &sem_motor);
 
       PT_SEM_WAIT(pt, &sem_ipc);
-      if (!bMotorBusy || previous_motor_state != current_motor_state) {
+      if (!motor_busy || previous_motor_state != current_motor_state) {
         // send command — either motor is free (normal) or state changed (override)
         if (previous_motor_state != current_motor_state) {
           ipc_comms |= MASK_OVERRIDE_FLAG;
@@ -182,7 +185,7 @@ int update_motor_data(struct pt *pt) {
       PT_SEM_SIGNAL(pt, &sem_motor);
 
       PT_SEM_WAIT(pt, &sem_ipc);
-      if (!bMotorBusy || previous_motor_state != current_motor_state) {
+      if (!motor_busy || previous_motor_state != current_motor_state) {
         // send command — either motor is free (normal) or state changed (override)
         if (previous_motor_state != current_motor_state) {
           ipc_comms |= MASK_OVERRIDE_FLAG;
@@ -203,7 +206,7 @@ int update_motor_data(struct pt *pt) {
       PT_SEM_SIGNAL(pt, &sem_motor);
 
       PT_SEM_WAIT(pt, &sem_ipc);
-      if (!bMotorBusy || previous_motor_state != current_motor_state) {
+      if (!motor_busy || previous_motor_state != current_motor_state) {
         // send command — either motor is free (normal) or state changed (override)
         if (previous_motor_state != current_motor_state) {
           ipc_comms |= MASK_OVERRIDE_FLAG;
@@ -224,7 +227,7 @@ int update_motor_data(struct pt *pt) {
       PT_SEM_SIGNAL(pt, &sem_motor);
 
       PT_SEM_WAIT(pt, &sem_ipc);
-      if (!bMotorBusy || previous_motor_state != current_motor_state) {
+      if (!motor_busy || previous_motor_state != current_motor_state) {
         // send command — either motor is free (normal) or state changed (override)
         if (previous_motor_state != current_motor_state) {
           ipc_comms |= MASK_OVERRIDE_FLAG;
