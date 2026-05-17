@@ -205,7 +205,7 @@ void setup() {
   PT_SEM_INIT(&sem_line, 1);
   PT_SEM_INIT(&sem_ipc, 1);
   PT_SEM_INIT(&sem_motor, 1);
-  myservo.attach(9);  // attaches the servo on pin 9 to the Servo object
+  //myservo.attach(9);  // attaches the servo on pin 9 to the Servo object
   while (!huskylens.begin(Wire)) Serial.println(F("Begin failed!"));
   huskylens.writeAlgorithm(ALGORITHM_COLOR_RECOGNITION);
   // huskyAlgorithm();   // Huskylens - Vision.ino
@@ -221,7 +221,7 @@ void loop() {
   PT_SCHEDULE(goal_distance(&pt_goal_distance));
   //PT_SCHEDULE(line_tracking(&pt_line_tracking));
   //do not uncomment as line tracking could mess with other Huskylens algorithms
-  PT_SCHEDULE(lens_adjustment(&pt_lens_adjustment));
+  //PT_SCHEDULE(lens_adjustment(&pt_lens_adjustment));
   PT_SCHEDULE(update_motor_state(&pt_update_motor_state));
   PT_SCHEDULE(update_motor_data(&pt_update_motor_data));
   PT_SCHEDULE(threadADCRead(&readPos));
