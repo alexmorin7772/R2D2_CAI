@@ -47,10 +47,10 @@ int ball_distance(struct pt* pt) {
       ball_state = finish;
    } else if (ball_state == finish) {
       //debug prints for the semaphore and shared flags
-      Serial.print(F("Ball semaphore value: "));
-      Serial.println(sem_ball.count);
-      Serial.print(F("Ball confidence: "));
-      Serial.println(ipc_comms & BALL_CONFIDENCE);
+      //Serial.print(F("Ball semaphore value: "));
+      //Serial.println(sem_ball.count);
+      //Serial.print(F("Ball confidence: "));
+      //Serial.println(ipc_comms & BALL_CONFIDENCE);
       ball_state = start;
       PT_SLEEP(pt, 1);
       //recalculate after 1 millisecond

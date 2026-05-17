@@ -105,7 +105,7 @@ static int threadMotorManager(struct pt *pt) {
       }
       PT_SEM_SIGNAL(pt, &sem_ipc); //Give control back
       if (COPY_OVERRIDE) { //Now check to see
-        Serial.println("override flag");
+        Serial.println(F("override flag found: executing command"));
         // 2) Check struct to get data
         PT_SEM_WAIT(pt, &sem_motor);
         tempX = current_motor_data.object_distance;
@@ -114,7 +114,7 @@ static int threadMotorManager(struct pt *pt) {
         PT_SEM_SIGNAL(pt, &sem_motor);
         // Trigger the Slave Thread
         bMotor = true;
-        Serial.println("worker starts");
+        Serial.println(F("worker starts"));
         // Pass data to slave (re-using motor data or a slave-specific struct)
       }
       PT_WAIT_WHILE(pt, bMotor);
@@ -145,7 +145,7 @@ static int threadMotorManager(struct pt *pt) {
       // Wait until Slave completes the task (Calculation + Spawn)
     PT_WAIT_UNTIL(pt, !bMotor); 
     StartTime = millis();
-    PT_SLEEP(pt, 1);
+    PT_SLEEP(pt, 100);
   }
   PT_END(pt);
 }
@@ -205,9 +205,10 @@ static int threadMotorWorker(struct pt *pt) {
     }
 
     TmrStart = millis();
-    TmrDur = moveTime + 1;
+    TmrDur = moveTime + 10;
 
     Serial.println(F("begin moving"));
+    
 
     if (runMode == drive_forward) {
       forward(motor1, motor2, speedconst);
@@ -217,14 +218,15 @@ static int threadMotorWorker(struct pt *pt) {
       right(motor1, motor2, 2*speedconst);
     } else if (runMode == turn_right){
       left(motor1, motor2, 2*speedconst);
+    } else if (runMode == idle){
+      brake(motor1, motor2);
     }
 
     Serial.println(F("moving"));
     PT_SPAWN(pt, &ptTimerSpawn, threadTimer_MotorWait(&ptTimerSpawn));
+                                       
 
     digitalWrite(LED_BUILTIN, LOW);
-
-    brake(motor1, motor2);
     Serial.println(F("done moving"));
     //Tell ipc comms movement stopped
     bMotor = false;
@@ -240,7 +242,7 @@ int threadTimer_MotorWait(struct pt *move)
   // mark the beginnning of the kick wait thread
   PT_BEGIN(move);
 
-  PT_WAIT_UNTIL(move, (getTicksDuration(TmrStart, millis()) >= TmrDur) || (ipc_comms & MASK_OVERRIDE_FLAG)); // One tick is 1 milliseconds
+  PT_WAIT_UNTIL(move, (getTicksDuration(TmrStart, millis()) >= TmrDur) /*|| (ipc_comms & MASK_OVERRIDE_FLAG)*/); // One tick is 1 milliseconds
   //brain needs to send payload then send override so that i am not executing old data
   PT_EXIT(move);
 

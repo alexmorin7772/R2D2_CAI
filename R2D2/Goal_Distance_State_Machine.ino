@@ -47,10 +47,10 @@ int goal_distance(struct pt* pt) {
       goal_state = finish;
    } else if (goal_state == finish) {
       //debug prints for the semaphore and shared flags
-      Serial.print(F("Goal semaphore value: "));
-      Serial.println(sem_goal.count);
-      Serial.print(F("Goal confidence: "));
-      Serial.println(static_cast<bool>(ipc_comms & GOAL_CONFIDENCE));
+      //Serial.print(F("Goal semaphore value: "));
+      //Serial.println(sem_goal.count);
+      //Serial.print(F("Goal confidence: "));
+      //Serial.println(static_cast<bool>(ipc_comms & GOAL_CONFIDENCE));
       goal_state = start;
       PT_SLEEP(pt, 1);
       //recalculate after 1 millisecond

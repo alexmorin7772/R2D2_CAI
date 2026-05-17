@@ -7,7 +7,7 @@
 #define MASK_IPC_Brain_To_Touch            0x00800000
 
 #define MASK_IPC_Motor_Read_Confirm     0x00000100
-#define MASK_OVERRIDE_FLAG 0x00001000
+#define MASK_IPC_Brain_To_Motor 0x00001000
 #define MASK_MOTOR_MOVING 0x00000200
 #define MASK_OVERRIDE_SEEN 0x00000400
 #define MASK_OVERRIDE_FLAG 0x00002000
@@ -64,7 +64,9 @@ enum motor_state {
   go_to_goal,
 };
 
+motor_state previous_motor_state = search;
 motor_state current_motor_state = search; //set default to search for ball
+
 motor_data current_motor_data = {-1, -1, idle}; //start by being idle
 
 int update_motor_state(struct pt *pt) {
@@ -79,30 +81,37 @@ int update_motor_state(struct pt *pt) {
 
     if (!ball_results.object_found && !bPresent) {
       //we don't have/know where the ball is, so we search for it
+      previous_motor_state = search;
       current_motor_state = search;
       //Serial.println(F("search"));
     } else if (!ball_results.object_found && bPresent && !goal_results.object_found) {
       //we have the ball but have to search for the goal
+      previous_motor_state = search;
       current_motor_state = search;
       //Serial.println(F("search"));
     } else if (!ball_results.object_found && bPresent && goal_results.object_found && !aligned_on_goal) {
       //we have the ball and see the goal but are not aligned
+      previous_motor_state = align_on_goal;
       current_motor_state = align_on_goal;
       //Serial.println(F("align_on_goal"));
     } else if (!ball_results.object_found && bPresent && goal_results.object_found && aligned_on_goal && goal_results.object_distance < MAX_GOAL_DISTANCE) {
       //we have the ball, are aligned on the goal, and are close enough
+      previous_motor_state = kick;
       current_motor_state = kick;
       //Serial.println(F("kick"));
     } else if (!ball_results.object_found && bPresent && goal_results.object_found && aligned_on_goal) {
       //we have and ball and are aligned on the goal
+      previous_motor_state = go_to_goal;
       current_motor_state = go_to_goal;
       //Serial.println(F("go_to_goal"));
     } else if (ball_results.object_found && !bPresent && !aligned_on_ball) {
       //we see the ball but are not aligned
+      previous_motor_state = align_on_ball;
       current_motor_state = align_on_ball;
       //Serial.println(F("align_on_ball"));
     } else if (ball_results.object_found && !bPresent && aligned_on_ball) {
       //we see the ball and are aligned
+      previous_motor_state = go_to_ball;
       current_motor_state = go_to_ball;
       //Serial.println(F("go_to_ball"));
     } else {
@@ -124,13 +133,18 @@ int update_motor_data(struct pt *pt) {
     } else if (current_motor_state == search) {
       PT_SEM_WAIT(pt, &sem_motor);
       current_motor_data.action = turn_left;
-      current_motor_data.turn_angle = 34;
+      current_motor_data.turn_angle = 68;
       current_motor_data.object_distance = 0;
       PT_SEM_SIGNAL(pt, &sem_motor);
       
       PT_SEM_WAIT(pt, &sem_ipc);
-      ipc_comms |= MASK_OVERRIDE_FLAG;
+      if (previous_motor_state != current_motor_state) {
+        ipc_comms |= MASK_OVERRIDE_FLAG;
+      } else {
+        ipc_comms |= MASK_IPC_Brain_To_Motor;
+      }
       PT_SEM_SIGNAL(pt, &sem_ipc);
+
     } else if (current_motor_state == align_on_ball) {
       //PT_WAIT_UNTIL(pt, ball_results.is_most_recent);
       //ball_results.is_most_recent = false;
@@ -143,7 +157,11 @@ int update_motor_data(struct pt *pt) {
       PT_SEM_SIGNAL(pt, &sem_motor);
 
       PT_SEM_WAIT(pt, &sem_ipc);
-      ipc_comms |= MASK_OVERRIDE_FLAG;
+      if (previous_motor_state != current_motor_state) {
+        ipc_comms |= MASK_OVERRIDE_FLAG;
+      } else {
+        ipc_comms |= MASK_IPC_Brain_To_Motor;
+      }
       PT_SEM_SIGNAL(pt, &sem_ipc);
 
     } else if (current_motor_state == align_on_goal) {
@@ -158,8 +176,13 @@ int update_motor_data(struct pt *pt) {
       PT_SEM_SIGNAL(pt, &sem_motor);
 
       PT_SEM_WAIT(pt, &sem_ipc);
-      ipc_comms |= MASK_OVERRIDE_FLAG;
+      if (previous_motor_state != current_motor_state) {
+        ipc_comms |= MASK_OVERRIDE_FLAG;
+      } else {
+        ipc_comms |= MASK_IPC_Brain_To_Motor;
+      }
       PT_SEM_SIGNAL(pt, &sem_ipc);
+
     } else if (current_motor_state == go_to_ball) {
       //PT_WAIT_UNTIL(pt, ball_results.is_most_recent);
       //ball_results.is_most_recent = false;
@@ -171,8 +194,13 @@ int update_motor_data(struct pt *pt) {
       PT_SEM_SIGNAL(pt, &sem_motor);
 
       PT_SEM_WAIT(pt, &sem_ipc);
-      ipc_comms |= MASK_OVERRIDE_FLAG;
+      if (previous_motor_state != current_motor_state) {
+        ipc_comms |= MASK_OVERRIDE_FLAG;
+      } else {
+        ipc_comms |= MASK_IPC_Brain_To_Motor;
+      }
       PT_SEM_SIGNAL(pt, &sem_ipc);
+
     } else if (current_motor_state == go_to_goal) {
       //PT_WAIT_UNTIL(pt, goal_results.is_most_recent);
       //goal_results.is_most_recent = false;
@@ -182,11 +210,17 @@ int update_motor_data(struct pt *pt) {
       current_motor_data.object_distance = goal_results.object_distance;
       current_motor_data.turn_angle = 0;
       PT_SEM_SIGNAL(pt, &sem_motor);
+
       PT_SEM_WAIT(pt, &sem_ipc);
-      ipc_comms |= MASK_OVERRIDE_FLAG;
+      if (previous_motor_state != current_motor_state) {
+        ipc_comms |= MASK_OVERRIDE_FLAG;
+      } else {
+        ipc_comms |= MASK_IPC_Brain_To_Motor;
+      }
       PT_SEM_SIGNAL(pt, &sem_ipc);
+
     } 
-    PT_SLEEP(pt, 1);
+    PT_SLEEP(pt, 10);
   }
   PT_END(pt);
 }
