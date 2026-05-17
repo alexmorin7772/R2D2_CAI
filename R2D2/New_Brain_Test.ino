@@ -143,7 +143,7 @@ int update_motor_data(struct pt *pt) {
       PT_SEM_WAIT(pt, &sem_ipc);
       if (!motor_busy || previous_motor_state != current_motor_state) {
         // send command — either motor is free (normal) or state changed (override)
-        if (previous_motor_state != current_motor_state && (previous_motor_state != go_to_ball || previous_motor_state != go_to_goal)) {
+        if (previous_motor_state != current_motor_state && previous_motor_state != go_to_ball && previous_motor_state != go_to_goal) {
           ipc_comms |= MASK_OVERRIDE_FLAG;
         } else {
           ipc_comms |= MASK_IPC_Brain_To_Motor;
@@ -165,7 +165,7 @@ int update_motor_data(struct pt *pt) {
       PT_SEM_WAIT(pt, &sem_ipc);
       if (!motor_busy || previous_motor_state != current_motor_state) {
         // send command — either motor is free (normal) or state changed (override)
-        if (previous_motor_state != current_motor_state && (previous_motor_state != go_to_ball || previous_motor_state != go_to_goal)) {
+        if (previous_motor_state != current_motor_state && previous_motor_state != go_to_ball && previous_motor_state != go_to_goal) {
           ipc_comms |= MASK_OVERRIDE_FLAG;
         } else {
           ipc_comms |= MASK_IPC_Brain_To_Motor;
@@ -187,7 +187,7 @@ int update_motor_data(struct pt *pt) {
       PT_SEM_WAIT(pt, &sem_ipc);
       if (!motor_busy || previous_motor_state != current_motor_state) {
         // send command — either motor is free (normal) or state changed (override)
-        if (previous_motor_state != current_motor_state && (previous_motor_state != go_to_ball || previous_motor_state != go_to_goal)) {
+        if (previous_motor_state != current_motor_state && previous_motor_state != go_to_ball && previous_motor_state != go_to_goal) {
           ipc_comms |= MASK_OVERRIDE_FLAG;
         } else {
           ipc_comms |= MASK_IPC_Brain_To_Motor;
@@ -208,7 +208,7 @@ int update_motor_data(struct pt *pt) {
       PT_SEM_WAIT(pt, &sem_ipc);
       if (!motor_busy || previous_motor_state != current_motor_state) {
         // send command — either motor is free (normal) or state changed (override)
-        if (previous_motor_state != current_motor_state && (previous_motor_state != go_to_ball || previous_motor_state != go_to_goal)) {
+        if (previous_motor_state != current_motor_state && previous_motor_state != go_to_ball && previous_motor_state != go_to_goal) {
           ipc_comms |= MASK_OVERRIDE_FLAG;
         } else {
           ipc_comms |= MASK_IPC_Brain_To_Motor;
@@ -229,7 +229,7 @@ int update_motor_data(struct pt *pt) {
       PT_SEM_WAIT(pt, &sem_ipc);
       if (!motor_busy || previous_motor_state != current_motor_state) {
         // send command — either motor is free (normal) or state changed (override)
-        if (previous_motor_state != current_motor_state && (previous_motor_state != go_to_ball || previous_motor_state != go_to_goal)) {
+        if (previous_motor_state != current_motor_state && previous_motor_state != go_to_ball && previous_motor_state != go_to_goal) {
           ipc_comms |= MASK_OVERRIDE_FLAG;
         } else {
           ipc_comms |= MASK_IPC_Brain_To_Motor;
