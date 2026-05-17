@@ -80,40 +80,34 @@ int update_motor_state(struct pt *pt) {
     aligned_on_goal = between_posts;
     //while knowing if we are centered on the goal might be useful, I think being between the posts is more important
     aligned_on_ball = abs(ball_results.object_turn_angle) <= BALL_ANGLE_OFFSET;
+    previous_motor_state = current_motor_state;
 
     if (!ball_results.object_found && !bPresent) {
       //we don't have/know where the ball is, so we search for it
-      previous_motor_state = current_motor_state;
       current_motor_state = search;
       //Serial.println(F("search"));
     } else if (!ball_results.object_found && bPresent && !goal_results.object_found) {
       //we have the ball but have to search for the goal
-      previous_motor_state = current_motor_state;
       current_motor_state = search;
       //Serial.println(F("search"));
     } else if (!ball_results.object_found && bPresent && goal_results.object_found && !aligned_on_goal) {
       //we have the ball and see the goal but are not aligned
-      previous_motor_state = current_motor_state;
       current_motor_state = align_on_goal;
       //Serial.println(F("align_on_goal"));
     } else if (!ball_results.object_found && bPresent && goal_results.object_found && aligned_on_goal && goal_results.object_distance < MAX_GOAL_DISTANCE) {
       //we have the ball, are aligned on the goal, and are close enough
-      previous_motor_state = current_motor_state;
       current_motor_state = kick;
       //Serial.println(F("kick"));
     } else if (!ball_results.object_found && bPresent && goal_results.object_found && aligned_on_goal) {
       //we have and ball and are aligned on the goal
-      previous_motor_state = current_motor_state;
       current_motor_state = go_to_goal;
       //Serial.println(F("go_to_goal"));
     } else if (ball_results.object_found && !bPresent && !aligned_on_ball) {
       //we see the ball but are not aligned
-      previous_motor_state = current_motor_state;
       current_motor_state = align_on_ball;
       //Serial.println(F("align_on_ball"));
     } else if (ball_results.object_found && !bPresent && aligned_on_ball) {
       //we see the ball and are aligned
-      previous_motor_state = current_motor_state;
       current_motor_state = go_to_ball;
       //Serial.println(F("go_to_ball"));
     } else {
