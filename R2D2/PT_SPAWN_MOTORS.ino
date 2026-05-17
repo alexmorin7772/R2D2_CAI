@@ -201,34 +201,42 @@ static int threadMotorWorker(struct pt *pt) {
     }
 
     TmrStart = millis();
-    TmrDur = moveTime + 10;
+    TmrDur = 20 * moveTime;
+
+    if (current_motor_state == go_to_ball || current_motor_state == go_to_goal) no_overrides = true;
+    else no_overrides = false;
 
     Serial.println(F("begin moving"));
     
     PT_SEM_WAIT(pt, &sem_ipc);
     if (runMode == drive_forward) {
-      forward(motor1, motor2, speedconst);
+      forward(motor1, motor2, speedconst / 2);
       Serial.println(F("I AM MOVING FORWARD"));
       ipc_comms |= MASK_MOTOR_MOVING;
     } else if (runMode == drive_backward){
-      back(motor1, motor2, speedconst);
+      back(motor1, motor2, speedconst / 2);
       Serial.println(F("I AM MOVING BACKWARD"));
       ipc_comms |= MASK_MOTOR_MOVING;
     } else if (runMode == turn_left){
-      left(motor1, motor2, 2*speedconst);
+      if (current_motor_state == align_on_ball || current_motor_state == align_on_goal) right(motor1, motor2, speedconst / 8);
+      else right(motor1, motor2, speedconst / 2);
       Serial.println(F("I AM MOVING LEFT"));
       ipc_comms |= MASK_MOTOR_MOVING;
     } else if (runMode == turn_right){
-      right(motor1, motor2, 2*speedconst);
+      if (current_motor_state == align_on_ball || current_motor_state == align_on_goal) left(motor1, motor2, speedconst / 8);
+      else left(motor1, motor2, speedconst / 2);
       Serial.println(F("I AM MOVING RIGHT"));
       ipc_comms |= MASK_MOTOR_MOVING;
     } else if (runMode == idle){
       brake(motor1, motor2);
       Serial.println(F("I AM BRAKING"));
     }
+
+    
     PT_SEM_SIGNAL(pt, &sem_ipc);
 
     Serial.println(F("moving"));
+    Serial.println(TmrDur);
     Serial.println(digitalRead(AIN1));
     Serial.println(digitalRead(AIN2));
     Serial.println(digitalRead(BIN1));
@@ -236,12 +244,8 @@ static int threadMotorWorker(struct pt *pt) {
     Serial.println(analogRead(PWMA));
     Serial.println(analogRead(PWMB));
 
-    TmrStart = millis();
-
     PT_SPAWN(pt, &ptTimerSpawn, threadTimer_MotorWait(&ptTimerSpawn));
-                               
-    brake(motor1, motor2);
-    
+                                   
     PT_SEM_WAIT(pt, &sem_ipc);
     ipc_comms &= ~MASK_MOTOR_MOVING;
     PT_SEM_SIGNAL(pt, &sem_ipc);
@@ -262,7 +266,7 @@ int threadTimer_MotorWait(struct pt *move)
   // mark the beginnning of the kick wait thread
   PT_BEGIN(move);
 
-  PT_WAIT_UNTIL(move, (getTicksDuration(TmrStart, millis()) >= TmrDur) /*|| (ipc_comms & MASK_OVERRIDE_FLAG)*/); // One tick is 1 milliseconds
+  PT_WAIT_UNTIL(move, (getTicksDuration(TmrStart, millis()) >= TmrDur) || ((ipc_comms & MASK_OVERRIDE_FLAG) && !no_overrides)); // One tick is 1 milliseconds
   //brain needs to send payload then send override so that i am not executing old data
   Serial.println(millis()-TmrStart);
   PT_EXIT(move);

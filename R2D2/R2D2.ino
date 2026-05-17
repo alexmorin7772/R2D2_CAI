@@ -221,7 +221,7 @@ void loop() {
   PT_SCHEDULE(goal_distance(&pt_goal_distance));
   //PT_SCHEDULE(line_tracking(&pt_line_tracking));
   //do not uncomment as line tracking could mess with other Huskylens algorithms
-  PT_SCHEDULE(lens_adjustment(&pt_lens_adjustment));
+  //PT_SCHEDULE(lens_adjustment(&pt_lens_adjustment));
   PT_SCHEDULE(update_motor_state(&pt_update_motor_state));
   PT_SCHEDULE(update_motor_data(&pt_update_motor_data));
   PT_SCHEDULE(threadADCRead(&readPos));
