@@ -66,7 +66,7 @@ enum motor_state {
   go_to_goal,
 };
 
-motor_state previous_motor_state = search;
+bool no_overrides = false;
 motor_state current_motor_state = search; //set default to search for ball
 
 motor_data current_motor_data = {-1, -1, idle}; //start by being idle
@@ -80,7 +80,6 @@ int update_motor_state(struct pt *pt) {
     aligned_on_goal = between_posts;
     //while knowing if we are centered on the goal might be useful, I think being between the posts is more important
     aligned_on_ball = abs(ball_results.object_turn_angle) <= BALL_ANGLE_OFFSET;
-    previous_motor_state = current_motor_state;
 
     if (!ball_results.object_found && !bPresent) {
       //we don't have/know where the ball is, so we search for it
@@ -137,14 +136,8 @@ int update_motor_data(struct pt *pt) {
       PT_SEM_SIGNAL(pt, &sem_motor);
       
       PT_SEM_WAIT(pt, &sem_ipc);
-      if (!motor_busy || previous_motor_state != current_motor_state) {
-        // send command — either motor is free (normal) or state changed (override)
-        if (previous_motor_state != current_motor_state && previous_motor_state != go_to_ball && previous_motor_state != go_to_goal) {
-          ipc_comms |= MASK_OVERRIDE_FLAG;
-        } else {
-          ipc_comms |= MASK_IPC_Brain_To_Motor;
-        }
-      }
+      ipc_comms |= MASK_OVERRIDE_FLAG;
+      ipc_comms |= MASK_IPC_Brain_To_Motor;
       PT_SEM_SIGNAL(pt, &sem_ipc);
 
     } else if (current_motor_state == align_on_ball) {
@@ -159,14 +152,8 @@ int update_motor_data(struct pt *pt) {
       PT_SEM_SIGNAL(pt, &sem_motor);
 
       PT_SEM_WAIT(pt, &sem_ipc);
-      if (!motor_busy || previous_motor_state != current_motor_state) {
-        // send command — either motor is free (normal) or state changed (override)
-        if (previous_motor_state != current_motor_state && previous_motor_state != go_to_ball && previous_motor_state != go_to_goal) {
-          ipc_comms |= MASK_OVERRIDE_FLAG;
-        } else {
-          ipc_comms |= MASK_IPC_Brain_To_Motor;
-        }
-      }
+      ipc_comms |= MASK_OVERRIDE_FLAG;
+      ipc_comms |= MASK_IPC_Brain_To_Motor;
       PT_SEM_SIGNAL(pt, &sem_ipc);
 
     } else if (current_motor_state == align_on_goal) {
@@ -181,14 +168,8 @@ int update_motor_data(struct pt *pt) {
       PT_SEM_SIGNAL(pt, &sem_motor);
 
       PT_SEM_WAIT(pt, &sem_ipc);
-      if (!motor_busy || previous_motor_state != current_motor_state) {
-        // send command — either motor is free (normal) or state changed (override)
-        if (previous_motor_state != current_motor_state && previous_motor_state != go_to_ball && previous_motor_state != go_to_goal) {
-          ipc_comms |= MASK_OVERRIDE_FLAG;
-        } else {
-          ipc_comms |= MASK_IPC_Brain_To_Motor;
-        }
-      }
+      ipc_comms |= MASK_OVERRIDE_FLAG;
+      ipc_comms |= MASK_IPC_Brain_To_Motor;
       PT_SEM_SIGNAL(pt, &sem_ipc);
 
     } else if (current_motor_state == go_to_ball) {
@@ -202,14 +183,8 @@ int update_motor_data(struct pt *pt) {
       PT_SEM_SIGNAL(pt, &sem_motor);
 
       PT_SEM_WAIT(pt, &sem_ipc);
-      if (!motor_busy || previous_motor_state != current_motor_state) {
-        // send command — either motor is free (normal) or state changed (override)
-        if (previous_motor_state != current_motor_state && previous_motor_state != go_to_ball && previous_motor_state != go_to_goal) {
-          ipc_comms |= MASK_OVERRIDE_FLAG;
-        } else {
-          ipc_comms |= MASK_IPC_Brain_To_Motor;
-        }
-      }
+      ipc_comms |= MASK_OVERRIDE_FLAG;
+      ipc_comms |= MASK_IPC_Brain_To_Motor;
       PT_SEM_SIGNAL(pt, &sem_ipc);
 
     } else if (current_motor_state == go_to_goal) {
@@ -223,14 +198,8 @@ int update_motor_data(struct pt *pt) {
       PT_SEM_SIGNAL(pt, &sem_motor);
 
       PT_SEM_WAIT(pt, &sem_ipc);
-      if (!motor_busy || previous_motor_state != current_motor_state) {
-        // send command — either motor is free (normal) or state changed (override)
-        if (previous_motor_state != current_motor_state && previous_motor_state != go_to_ball && previous_motor_state != go_to_goal) {
-          ipc_comms |= MASK_OVERRIDE_FLAG;
-        } else {
-          ipc_comms |= MASK_IPC_Brain_To_Motor;
-        }
-      }
+      ipc_comms |= MASK_OVERRIDE_FLAG;
+      ipc_comms |= MASK_IPC_Brain_To_Motor;
       PT_SEM_SIGNAL(pt, &sem_ipc);
 
     } 
