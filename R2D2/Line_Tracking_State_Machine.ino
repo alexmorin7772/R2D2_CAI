@@ -5,7 +5,7 @@ unsigned long line_start_millis;
 int line_tracking(struct pt* pt) {
   PT_BEGIN(pt);
   for (;;) {
-    //Serial.print("Line state: ");
+    //Serial.print(F("Line state: "));
     //Serial.println(line_state);
     if (line_state == line_start) {
       line_start_millis = millis();
@@ -16,7 +16,7 @@ int line_tracking(struct pt* pt) {
       line_state = test_for_line;
       //initialize everything and test for line
     } else if (line_state == test_for_line) {
-      //Serial.println("Line started!");
+      //Serial.println(F("Line started!"));
       //failure leads to checking the time
       if (!huskylens.request()) line_state = line_check_time;
       else if (!huskylens.isLearned()) line_state = line_check_time;
@@ -39,16 +39,16 @@ int line_tracking(struct pt* pt) {
       else {
         line_origin = {result.xOrigin, result.yOrigin};
         line_target = {result.xTarget, result.yTarget};
-        Serial.print("Line origin: (");
+        Serial.print(F("Line origin: ("));
         Serial.print(line_origin.x);
-        Serial.print(", ");
+        Serial.print(F(", "));
         Serial.print(line_origin.y);
-        Serial.println(")");
-        Serial.print("Line target: (");
+        Serial.println(F(")"));
+        Serial.print(F("Line target: ("));
         Serial.print(line_target.x);
-        Serial.print(", ");
+        Serial.print(F(", "));
         Serial.print(line_target.y);
-        Serial.println(")");
+        Serial.println(F(")"));
         //take control of the results struct
         PT_SEM_WAIT(pt, &sem_line);
         line_results.origin = line_origin;
@@ -62,9 +62,9 @@ int line_tracking(struct pt* pt) {
       }
     } else if (line_state == line_finish) {
       //debug prints for the semaphore and shared flags
-      Serial.print("Line semaphore value: ");
+      Serial.print(F("Line semaphore value: "));
       Serial.println(sem_line.count);
-      Serial.print("Line confidence: ");
+      Serial.print(F("Line confidence: "));
       Serial.println(ipc_comms & LINE_CONFIDENCE);
       line_state = line_start;
       PT_SLEEP(pt, 1000);

@@ -3,19 +3,19 @@
   for (;;) {
     huskylens.writeAlgorithm(ALGORITHM_OBJECT_TRACKING);
     if (!huskylens.request()) {
-      Serial.println("Request ERROR!");
+      Serial.println(F("Request ERROR!"));
       PT_SLEEP(pt, 10);
       ball_success = false;
       continue;
       //Wait 10 ms and try again
     } else if (!huskylens.isLearned()) {
-      Serial.println("Learn ERROR!");
+      Serial.println(F("Learn ERROR!"));
       PT_SLEEP(pt, 10);
       ball_success = false;
       continue;
       //Wait 10 ms and try again
     } else if (!huskylens.available()) {
-      Serial.println("Availability ERROR!");
+      Serial.println(F("Availability ERROR!"));
       PT_SLEEP(pt, 10);
       ball_success = false;
       continue;
