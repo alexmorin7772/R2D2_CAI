@@ -156,9 +156,9 @@ enum lens_adjustment_state {
   lens_finish
 };
 
-int lux = 0;
-int actual_lux = 0;
-int angle = 0;
+uint16_t lux = 0;
+uint16_t actual_lux = 0;
+uint8_t angle = 0;
 
 bool started = false;
 //boolean for the start/stop signal
