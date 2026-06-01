@@ -42,6 +42,8 @@ static volatile unsigned long prevTime2 = 0;
 static volatile unsigned long prevTime3 = 0;
 static volatile unsigned long prevTime4 = 0;
 
+static volatile unsigned long prevTouchTime = 0;
+
 static volatile float V_value;
 static volatile float V_average;
 static volatile boolean bKick_Again = false;
@@ -65,6 +67,17 @@ void touchSetup(void) {
 
   pinMode(V_LOW, OUTPUT);
   digitalWrite(V_LOW, LOW);
+
+  // below are the 4 pinmodes for the impeller
+  pinMode(FAN_AIN1, OUTPUT);
+  pinMode(FAN_PWM, OUTPUT);
+  pinMode(FAN_STBY, OUTPUT);
+  pinMode(LED_BUILTIN, OUTPUT);
+
+  // Making sure the impeller is off at the start
+  digitalWrite(FAN_STBY, LOW);
+  digitalWrite(FAN_AIN1, HIGH);
+  analogWrite(FAN_PWM, 0);
 
   cli(); // Disable global interrupts until required
 
@@ -162,13 +175,13 @@ static int threadADCRead(struct pt* pos)
         // PT_SEM_SIGNAL(pos, &semTouch); // Releases the next thread th     at was waiting for the semaphore to be signaled
         
         if (i < 4) {
-          V_datapoints[i++] = (5.0/1024)*29*A_pos;
+          V_datapoints[i++] = (5.0/1024)*30*A_pos;
         }
         else {
           V_datapoints[0] = V_datapoints[1];
           V_datapoints[1] = V_datapoints[2];
           V_datapoints[2] = V_datapoints[3];
-          V_datapoints[3] = (5.0/1024)*29*A_pos;
+          V_datapoints[3] = (5.0/1024)*30*A_pos;
 
           eReadState = RS_WAIT;
         }
@@ -177,7 +190,7 @@ static int threadADCRead(struct pt* pos)
       PT_YIELD(pos);
     }
     else if (eReadState == RS_WAIT) {
-      if (getTicksDuration(prevTime4, millis()) >= 1) {
+      if (getTicksDuration(prevTime4, millis()) >= 10) {
         prevTime4 = millis();
         eReadState = RS_ADC;
       }
@@ -229,11 +242,17 @@ static int threadDisplay(struct pt* disp)
       Serial.print(0);
       Serial.print(",");
       
-      V_value = (5.0/1024)*29*A_pos;
+      V_value = (5.0/1024)*30*A_pos;
       V_average = (V_datapoints[0] + V_datapoints[1] + V_datapoints[2] + V_datapoints[3]) / 4.0; // Used array to find average between 4 shifting Volt values
 
-      if (V_average >= 0.01) {
+      if (V_average >= 0.001) {
         eDispState = DS_PRESENT;
+        
+        prevTouchTime = millis();
+
+        digitalWrite(FAN_STBY, HIGH);
+        digitalWrite(FAN_AIN1, LOW);
+        analogWrite(FAN_PWM, 255);
       } 
       else {
         eDispState = DS_ABSENT;
@@ -299,6 +318,13 @@ static int threadDisplay(struct pt* disp)
         // prevTime1 = millis();
         // PORTB &= ~(1 << 4);
       }
+
+      if (getTicksDuration(prevTouchTime, millis()) >= 5000) {
+        digitalWrite(FAN_STBY, LOW);
+        digitalWrite(FAN_AIN1, HIGH);
+        analogWrite(FAN_PWM, 0);
+      }
+
     }
   } // forever
 
