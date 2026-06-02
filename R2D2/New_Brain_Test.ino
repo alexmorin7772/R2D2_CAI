@@ -64,10 +64,12 @@ enum motor_state {
   align_on_goal,
   go_to_ball,
   go_to_goal,
+  overshoot_to_reach
 };
 
 bool no_overrides = false;
 motor_state current_motor_state = search; //set default to search for ball
+motor_state previous_motor_state = search;
 
 motor_data current_motor_data = {-1, -1, idle}; //start by being idle
 
@@ -83,34 +85,43 @@ int update_motor_state(struct pt *pt) {
 
     if (!ball_results.object_found && !bPresent) {
       //we don't have/know where the ball is, so we search for it
+      previous_motor_state = current_motor_state;
       current_motor_state = search;
       //Serial.println(F("search"));
     } else if (!ball_results.object_found && bPresent && !goal_results.object_found) {
       //we have the ball but have to search for the goal
+      previous_motor_state = current_motor_state;
       current_motor_state = search;
       //Serial.println(F("search"));
     } else if (!ball_results.object_found && bPresent && goal_results.object_found && !aligned_on_goal) {
       //we have the ball and see the goal but are not aligned
+      previous_motor_state = current_motor_state;
       current_motor_state = align_on_goal;
       //Serial.println(F("align_on_goal"));
     } else if (!ball_results.object_found && bPresent && goal_results.object_found && aligned_on_goal && goal_results.object_distance < MAX_GOAL_DISTANCE) {
       //we have the ball, are aligned on the goal, and are close enough
+      previous_motor_state = current_motor_state;
       current_motor_state = kick;
       //Serial.println(F("kick"));
     } else if (!ball_results.object_found && bPresent && goal_results.object_found && aligned_on_goal) {
       //we have and ball and are aligned on the goal
+      previous_motor_state = current_motor_state;
       current_motor_state = go_to_goal;
       //Serial.println(F("go_to_goal"));
     } else if (ball_results.object_found && !bPresent && !aligned_on_ball) {
       //we see the ball but are not aligned
+      previous_motor_state = current_motor_state;
       current_motor_state = align_on_ball;
       //Serial.println(F("align_on_ball"));
     } else if (ball_results.object_found && !bPresent && aligned_on_ball) {
       //we see the ball and are aligned
+      previous_motor_state = current_motor_state;
       current_motor_state = go_to_ball;
       //Serial.println(F("go_to_ball"));
-    } else {
-      Serial.println(F("**************"));
+    } else if ((previous_motor_state == go_to_goal) && !bPresent) {
+      //moved to the ball but nothing there, might need to overshoot a bit
+      previous_motor_state = current_motor_state;
+      current_motor_state = overshoot_to_reach;
     }
     PT_SLEEP(pt, 1);
   }
@@ -202,7 +213,18 @@ int update_motor_data(struct pt *pt) {
       ipc_comms |= MASK_IPC_Brain_To_Motor;
       PT_SEM_SIGNAL(pt, &sem_ipc);
 
-    } 
+    } else if (current_motor_state == overshoot_to_reach) {
+      PT_SEM_WAIT(pt, &sem_motor);
+      current_motor_data.action = drive_forward;
+      current_motor_data.object_distance = 2;
+      current_motor_data.turn_angle = 0;
+      PT_SEM_SIGNAL(pt, &sem_motor);
+
+      PT_SEM_WAIT(pt, &sem_ipc);
+      ipc_comms |= MASK_OVERRIDE_FLAG;
+      ipc_comms |= MASK_IPC_Brain_To_Motor;
+      PT_SEM_SIGNAL(pt, &sem_ipc);
+    }
     PT_SLEEP(pt, 10);
   }
   PT_END(pt);

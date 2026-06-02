@@ -6,13 +6,15 @@
 // Pins for all inputs, keep in mind the PWM defines must be on PWM pins
 // the default pins listed are the ones used on the Redbot (ROB-12097) with
 // the exception of STBY which the Redbot controls with a physical switch
-#define AIN1 2
-#define BIN1 7
-#define AIN2 4
-#define BIN2 8
-#define PWMA 5
-#define PWMB 6
-#define STBY 9
+#define AIN1 5
+#define BIN1 8
+#define AIN2 6
+#define BIN2 11
+#define PWMA 7
+#define PWMB 12
+#define STBY 13
+//ain1, ain2, pwma = 2,4,5
+//bin1, bin2, pwmb = 7,8,6
 
 // these constants are used to allow you to make your motor configuration 
 // line up with function names like forward.  Value can be 1 or -1
@@ -200,9 +202,6 @@ static int threadMotorWorker(struct pt *pt) {
       speedconst = slowspeedconst;
     }
 
-    TmrStart = millis();
-    TmrDur = 20 * moveTime;
-
     if (current_motor_state == go_to_ball || current_motor_state == go_to_goal) no_overrides = true;
     else no_overrides = false;
 
@@ -232,6 +231,8 @@ static int threadMotorWorker(struct pt *pt) {
       Serial.println(F("I AM BRAKING"));
     }
 
+    TmrStart = millis();
+    TmrDur = (20 * moveTime) + 442;
     
     PT_SEM_SIGNAL(pt, &sem_ipc);
 
