@@ -1,5 +1,3 @@
-lens_adjustment_state lens_state = lens_start;
-
 /*
 Please note that cos^2(angle) means cos(angle) * cos(angle), NOT cos(cos(angle))
 Formula for amount of light let through: lux * cos^2(angle)
@@ -12,6 +10,32 @@ An angle of 0 means that it's completely closed
 
 To convert to the angle that's used in Malus' law, do (180 - angle) / 2
 */
+
+typedef enum lens_adjustment_state {
+  lens_start,
+  read_lux,
+  calculate_angle,
+  move_servo,
+  lens_finish
+};
+
+int lux = 0;
+int actual_lux = 0;
+int angle = 0;
+
+lens_adjustment_state lens_state = lens_start;
+
+//state machine variables
+int servo_position = 0;
+
+Servo myservo;  // create Servo object to control a servo
+
+int pos = 0;  // variable to store the servo position
+
+void setupLightSensor(void) {
+  TSL2561.init();
+  myservo.attach(9);  // attaches the servo on pin 9 to the Servo object
+}
 
 int lens_adjustment(struct pt* pt) {
   PT_BEGIN(pt);

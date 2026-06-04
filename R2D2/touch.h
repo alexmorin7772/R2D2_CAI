@@ -14,6 +14,11 @@ Including bit flags & bit masks to use
 #define V_ref_neg   5
 #define V_LOW       7
 
+// below are Impeller Control Pins for Motor Diver #2
+#define FAN_AIN1 A2
+#define FAN_PWM 3
+#define FAN_STBY 4
+
 typedef enum READ_STATE {
   RS_INIT = 0,
   RS_ADC,
@@ -74,3 +79,4 @@ void Post_Touch_Event_to_Brain () {
 */
 
 #endif
+

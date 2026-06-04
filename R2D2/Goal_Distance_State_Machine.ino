@@ -1,6 +1,14 @@
+//goal distance variables
+float goal_size_30 = 100.0;
+float goal_current_distance;
+float goal_height;
+bool goal_success;
+location goal_location;
+
 object_recognition_state goal_state = start;
 //object_recognition_results goal_results;
 unsigned long goal_start_millis;
+extern pt_sem sem_goal;
 
 int goal_distance(struct pt* pt) {
   PT_BEGIN(pt);

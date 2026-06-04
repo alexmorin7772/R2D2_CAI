@@ -7,32 +7,10 @@
 #include <Servo.h>
 #include <SparkFun_TB6612.h>
 #include "touch.h"
-
 /*
-The following are all defined constants
-#define HIGH 0x1
-#define LOW  0x0
-
-#define INPUT 0x0
-#define OUTPUT 0x1
-#define INPUT_PULLUP 0x2
-
-#define PI 3.1415926535897932384626433832795
-#define HALF_PI 1.5707963267948966192313216916398
-#define TWO_PI 6.283185307179586476925286766559
-#define DEG_TO_RAD 0.017453292519943295769236907684886
-#define RAD_TO_DEG 57.295779513082320876798154814105
-#define EULER 2.718281828459045235360287471352
-
-#define SERIAL  0x0
-#define DISPLAY 0x1
-
-#define LSBFIRST 0
-#define MSBFIRST 1
-
-#define CHANGE 1
-#define FALLING 2
-#define RISING 3
+"R2D2.ino" by team R2D2_CAI in the git repsitory "R2D2_CAI"
+To create a "robot" that can "play soccer"
+Can Comment/Uncomment lines using #ifdef and #endif
 */
 
 //Define all macros
@@ -208,10 +186,11 @@ void setup() {
   //myservo.attach(9);  // attaches the servo on pin 9 to the Servo object
   while (!huskylens.begin(Wire)) Serial.println(F("Begin failed!"));
   huskylens.writeAlgorithm(ALGORITHM_COLOR_RECOGNITION);
+
   // huskyAlgorithm();   // Huskylens - Vision.ino
   // motorSetup();       // Motor Driver - 
   // groveDLSsetup();    // Light Sensor - 
-  // touchSetup();       // Touch Sensor - 
+  // touchSetup();       // Touch Sensor - Touch.ino
   // eyelidSetup();      // Servo / Iris - Eyelid.ino
 }
 
