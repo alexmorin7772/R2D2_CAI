@@ -5,11 +5,11 @@ unsigned long ball_start_millis;
 int ball_distance(struct pt* pt) {
   PT_BEGIN(pt);
   for (;;) {
-   if (ball_state == start) {
+    if (ball_state == start) {
       ball_state = test_for_object;
       //once we start, test if the object is there
     } else if (ball_state == test_for_object) {
-     if (!huskylens.request() or !huskylens.countBlocks(BALL_ID)) ball_state = fail;
+      if (!huskylens.request() or !huskylens.countBlocks(BALL_ID)) ball_state = fail;
       else ball_state = evaluate_distance;
       //otherwise find the distance
     } else if (ball_state == evaluate_distance) {
@@ -37,7 +37,7 @@ int ball_distance(struct pt* pt) {
       //allow other threads to read the results struct
       PT_SEM_SIGNAL(pt, &sem_ball);
       ball_state = finish; //successfully found the distance, so go to finish
-   } else if (ball_state == fail) {
+    } else if (ball_state == fail) {
       PT_SEM_WAIT(pt, &sem_ball);
       //change the confidence bit to 0 (not confident)
       ipc_comms &= ~BALL_CONFIDENCE;
@@ -45,7 +45,7 @@ int ball_distance(struct pt* pt) {
       ball_results.object_found = false;
       PT_SEM_SIGNAL(pt, &sem_ball);
       ball_state = finish;
-   } else if (ball_state == finish) {
+    } else if (ball_state == finish) {
       //debug prints for the semaphore and shared flags
       //Serial.print(F("Ball semaphore value: "));
       //Serial.println(sem_ball.count);

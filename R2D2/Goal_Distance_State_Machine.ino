@@ -5,11 +5,11 @@ unsigned long goal_start_millis;
 int goal_distance(struct pt* pt) {
   PT_BEGIN(pt);
   for (;;) {
-   if (goal_state == start) {
+    if (goal_state == start) {
       goal_state = test_for_object;
       //once we start, test if the object is there
     } else if (goal_state == test_for_object) {
-     if (!huskylens.request() or !huskylens.countBlocks(GOAL_ID)) goal_state = fail;
+      if (!huskylens.request() or !huskylens.countBlocks(GOAL_ID)) goal_state = fail;
       else goal_state = evaluate_distance;
       //otherwise find the distance
     } else if (goal_state == evaluate_distance) {
@@ -37,7 +37,7 @@ int goal_distance(struct pt* pt) {
       //allow other threads to read the results struct
       PT_SEM_SIGNAL(pt, &sem_goal);
       goal_state = finish; //successfully found the distance, so go to finish
-   } else if (goal_state == fail) {
+    } else if (goal_state == fail) {
       PT_SEM_WAIT(pt, &sem_goal);
       //change the confidence bit to 0 (not confident)
       ipc_comms &= ~GOAL_CONFIDENCE;
@@ -45,7 +45,7 @@ int goal_distance(struct pt* pt) {
       goal_results.object_found = false;
       PT_SEM_SIGNAL(pt, &sem_goal);
       goal_state = finish;
-   } else if (goal_state == finish) {
+    } else if (goal_state == finish) {
       //debug prints for the semaphore and shared flags
       //Serial.print(F("Goal semaphore value: "));
       //Serial.println(sem_goal.count);
