@@ -203,8 +203,6 @@ static int threadMotorWorker(struct pt *pt) {
     TmrStart = millis();
     TmrDur = 20 * moveTime;
 
-    if (current_motor_state == go_to_ball || current_motor_state == go_to_goal) no_overrides = true;
-    else no_overrides = false;
 
     Serial.println(F("begin moving"));
     
