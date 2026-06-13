@@ -174,7 +174,6 @@ static int threadMotorWorker(struct pt *pt) {
 
   for(;;) {
     // Wait for the Manager to signal "true"
-    digitalWrite(LED_BUILTIN, HIGH);
 
     PT_WAIT_UNTIL(pt, bMotor);
     ipc_comms &= ~MASK_OVERRIDE_SEEN;
@@ -251,7 +250,6 @@ static int threadMotorWorker(struct pt *pt) {
     ipc_comms &= ~MASK_MOTOR_MOVING;
     PT_SEM_SIGNAL(pt, &sem_ipc);
 
-    digitalWrite(LED_BUILTIN, LOW);
     Serial.println(F("done moving"));
     //Tell ipc comms movement stopped
     bMotor = false;

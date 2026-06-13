@@ -21,6 +21,7 @@
 #define BALL_ANGLE_OFFSET 0.09 //0.09 radians is about 5 degrees
 #define MAX_GOAL_DISTANCE 20 //maximum distance the goal can be away for us to kick
 
+
 //pt_sem sem_ipc_comms, sem_motor;
 
 //PT_SEM_INIT(&sem_ipc_comms, 1);
@@ -47,8 +48,24 @@ struct motor_data {
   motor_action action;
 };*/
 
-extern volatile boolean bPresent; //this was just defined so the code would compile without needing Alex's code
-//be sure to delete once we merge
+// Important bitflag operations
+void Post_Brain_Event_to_Touch () {
+  ipc_comms |= MASK_IPC_Brain_To_Touch;
+}
+
+// Important bitflag operations
+boolean Check_Available_Touch_Event (void) {
+  // The following returns true for new events only - (i.e. One that has not yet been confirmed-read by Brain)
+  if ( (ipc_comms & MASK_IPC_Touch_To_Brain) && !(ipc_comms & MASK_IPC_Brain_Read_Confirmation) ) { // Main uses Read Confirmation to conclude the last event
+    return true;
+  }
+  return false;
+}
+
+extern volatile bool bPresent;
+extern volatile bool bKick;
+extern volatile unsigned long prevTime3;
+volatile bool alert_to_kick;
 
 bool between_posts = false;
 bool centered_on_goal = false;
@@ -138,7 +155,7 @@ int update_motor_data(struct pt *pt) {
     motor_busy = (ipc_comms & MASK_MOTOR_MOVING);
     PT_SEM_SIGNAL(pt, &sem_ipc);
     if (current_motor_state == kick) {
-      //activate solenoid here
+      alert_to_kick = true;
     } else if (current_motor_state == search) {
       PT_SEM_WAIT(pt, &sem_motor);
       current_motor_data.action = turn_left;
@@ -228,4 +245,35 @@ int update_motor_data(struct pt *pt) {
     PT_SLEEP(pt, 10);
   }
   PT_END(pt);
+}
+
+int check_touch_ipc(struct pt* brain) {
+  PT_BEGIN(brain);
+  
+  static unsigned long prevTime3 = 0;
+  
+  for(;;)
+  {
+    PT_SEM_WAIT(brain, &sem_ipc);
+    if ( Check_Available_Touch_Event() ) {  // New event found from Touch Sensor
+      ipc_comms |= MASK_IPC_Brain_Read_Confirmation;  // Confirm the event
+      PORTB &= ~(1 << 5); // Debug LED manipulation matching hardware state
+
+      if (alert_to_kick) {
+        bKick = true;
+
+        // Before a new event can be posted to Touch, clear the confirmation flag
+        if ( (ipc_comms & MASK_IPC_Brain_To_Touch) && (ipc_comms & MASK_IPC_Touch_Read_Confirmation) ) { 
+          ipc_comms &= ~MASK_IPC_Touch_Read_Confirmation;
+        }
+        Post_Brain_Event_to_Touch();
+      }
+    }
+    PT_SEM_SIGNAL(brain, &sem_ipc);
+
+    prevTime3 = millis();
+    PT_WAIT_UNTIL(brain, (millis() - prevTime3) >= 1);
+  }
+  
+  PT_END(brain);
 }

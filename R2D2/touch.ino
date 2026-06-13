@@ -32,15 +32,15 @@ volatile bool adcStarted = false;
 
 static volatile float V_datapoints[4];
 
-static volatile boolean bKick = false;
-static volatile boolean bKick_Start = false;
-static volatile boolean bPresent = false;
-static volatile boolean bBeastMode = false;
+extern volatile bool bKick;
+extern volatile bool bKick_Start;
+extern volatile bool bPresent;
+extern volatile bool bBeastMode;
 
-static volatile unsigned long prevTime1 = 0;
-static volatile unsigned long prevTime2 = 0;
-static volatile unsigned long prevTime3 = 0;
-static volatile unsigned long prevTime4 = 0;
+extern volatile unsigned long prevTime1;
+extern volatile unsigned long prevTime2;
+extern volatile unsigned long prevTime3;
+extern volatile unsigned long prevTime4;
 
 static volatile unsigned long prevTouchTime = 0;
 
@@ -53,7 +53,6 @@ void touchSetup(void) {
   PT_INIT(&adcDisp); // Touch.ino
   PT_SEM_INIT(&semTouch, 1); // Touch.ino
   PT_INIT(&solKick); // Touch.ino
-  PT_INIT(&ptAlex_test); // Test
 
   // Touch.ino setup for code pinmode & ADC
   pinMode(V1, OUTPUT);
@@ -99,7 +98,6 @@ void RunTouchKickScheduler(void) {
   PT_SCHEDULE(threadADCRead(&readPos));
   PT_SCHEDULE(threadDisplay(&adcDisp));
   PT_SCHEDULE(threadKick(&solKick));
-  PT_SCHEDULE(threadMain(&ptAlex_test));
 }
 
 // ADC complete interrupt service routine
@@ -107,6 +105,7 @@ ISR(ADC_vect) {
   A_pos = ADC; // Read the ADC value
   adcStarted = false;  // Set the flag to indicate a reading is ready
 }
+
 
 // Important bitflag operations
 boolean Check_Available_Brain_Event (void) {
@@ -117,24 +116,13 @@ boolean Check_Available_Brain_Event (void) {
   return false;
 }
 
-// Important bitflag operations
-boolean Check_Available_Touch_Event (void) {
-  // The following returns true for new events only - (i.e. One that has not yet been confirmed-read by Brain)
-  if ( (ipc_comms & MASK_IPC_Touch_To_Brain) && !(ipc_comms & MASK_IPC_Brain_Read_Confirmation) ) { // Main uses Read Confirmation to conclude the last event
-    return true;
-  }
-  return false;
-}
 
 // Important bitflag operations
 void Post_Touch_Event_to_Brain () {
   ipc_comms |= MASK_IPC_Touch_To_Brain;
 }
 
-// Important bitflag operations
-void Post_Brain_Event_to_Touch () {
-  ipc_comms |= MASK_IPC_Brain_To_Touch;
-}
+
 
 void readSensorPos(void) {
   digitalWrite(V1, HIGH);
@@ -351,39 +339,4 @@ static int threadKick(struct pt* sol) // Worker Thread
   }
 
   PT_END(sol);
-}
-
-static int threadMain(struct pt* brain)
-{
-  PT_BEGIN(brain);
-  
-  digitalWrite(LED_BUILTIN, LOW); // Initial state
-  
-  for(;;)
-  {
-    PT_SEM_WAIT(brain, &semTouch);
-    if ( Check_Available_Touch_Event() ) {  // New event found!
-      ipc_comms |= MASK_IPC_Brain_Read_Confirmation;  // Confirm the event
-      // digitalWrite(LED_BUILTIN, LOW); // Brain received (LOW)
-      PORTB &= ~(1 << 5);
-
-      if (bPresent) {
-        bKick = true;
-        // PORTB &= ~(1 << 5);
-
-        // Before a new (or updated) event can be posted to Touch, it must first clear the confirmation flag from Touch
-        if ( (ipc_comms & MASK_IPC_Brain_To_Touch) && (ipc_comms & MASK_IPC_Touch_Read_Confirmation) ) { // The last event was consumed; solution to above comment
-          ipc_comms &= ~MASK_IPC_Touch_Read_Confirmation;
-        }
-        Post_Brain_Event_to_Touch();
-      }
-    }
-    PT_SEM_SIGNAL(brain, &semTouch);
-
-    prevTime3 = millis();
-    // PT_WAIT_WHILE(brain, getTicksDuration(prevTime3, millis()) < 1);
-    PT_WAIT_UNTIL(brain, (millis() - prevTime3) >= 1);
-  }
-  
-  PT_END(brain);
 }

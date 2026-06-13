@@ -50,6 +50,7 @@ pt pt_update_motor_state;
 pt pt_update_motor_data;
 pt ptManager;
 pt ptWorker;
+pt pt_touch_and_brain;
 
 extern volatile pt solKick;
 extern volatile pt ptAlex_test;
@@ -95,6 +96,16 @@ Coordinate system
 extern volatile pt solKick; // Touch.ino declarations
 extern volatile pt ptAlex_test; // Touch.ino declarations
 extern volatile pt readPos, adcDisp; // Touch.ino declarations
+
+volatile bool bKick = false;
+volatile bool bKick_Start = false;
+volatile bool bPresent = false;
+volatile bool bBeastMode = false;
+
+volatile unsigned long prevTime1 = 0;
+volatile unsigned long prevTime2 = 0;
+volatile unsigned long prevTime3 = 0;
+volatile unsigned long prevTime4 = 0;
 
 bool started = false;
 //boolean for the start/stop signal
@@ -178,6 +189,7 @@ void setup() {
   PT_INIT(&pt_update_motor_data);
   PT_INIT(&ptManager);
   PT_INIT(&ptWorker);
+  PT_INIT(&pt_touch_and_brain);
   PT_SEM_INIT(&sem_ball, 1);
   PT_SEM_INIT(&sem_goal, 1);
   PT_SEM_INIT(&sem_line, 1);
@@ -206,7 +218,7 @@ void loop() {
   PT_SCHEDULE(threadADCRead(&readPos));
   PT_SCHEDULE(threadDisplay(&adcDisp));
   PT_SCHEDULE(threadKick(&solKick));
-  PT_SCHEDULE(threadMain(&ptAlex_test));
   PT_SCHEDULE(threadMotorWorker(&ptWorker));
   PT_SCHEDULE(threadMotorManager(&ptManager));
+  PT_SCHEDULE(check_touch_ipc(&pt_touch_and_brain));
 }
