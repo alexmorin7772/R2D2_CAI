@@ -183,6 +183,8 @@ int update_motor_data(struct pt *pt) {
       ipc_comms |= MASK_OVERRIDE_FLAG;
       ipc_comms |= MASK_IPC_Brain_To_Motor;
       PT_SEM_SIGNAL(pt, &sem_ipc);
+      no_overrides = false;
+      //we can override if we are actively aligning
 
     } else if (current_motor_state == align_on_goal) {
       //PT_WAIT_UNTIL(pt, goal_results.is_most_recent);
@@ -199,6 +201,8 @@ int update_motor_data(struct pt *pt) {
       ipc_comms |= MASK_OVERRIDE_FLAG;
       ipc_comms |= MASK_IPC_Brain_To_Motor;
       PT_SEM_SIGNAL(pt, &sem_ipc);
+      no_overrides = false;
+      //we can  override if we are actively aligning
 
     } else if (current_motor_state == go_to_ball) {
       //PT_WAIT_UNTIL(pt, ball_results.is_most_recent);
@@ -214,6 +218,8 @@ int update_motor_data(struct pt *pt) {
       ipc_comms |= MASK_OVERRIDE_FLAG;
       ipc_comms |= MASK_IPC_Brain_To_Motor;
       PT_SEM_SIGNAL(pt, &sem_ipc);
+      no_overrides = true;
+      //don't allow overrides like searching for the ball if we are going towards it
 
     } else if (current_motor_state == go_to_goal) {
       //PT_WAIT_UNTIL(pt, goal_results.is_most_recent);
@@ -229,6 +235,8 @@ int update_motor_data(struct pt *pt) {
       ipc_comms |= MASK_OVERRIDE_FLAG;
       ipc_comms |= MASK_IPC_Brain_To_Motor;
       PT_SEM_SIGNAL(pt, &sem_ipc);
+      no_overrides = true;
+      //don't allow overrides like searching for the goal if we are going towards it
 
     } else if (current_motor_state == overshoot_to_reach) {
       PT_SEM_WAIT(pt, &sem_motor);
