@@ -14,11 +14,10 @@ C) Using an extra function "getTicksDuration" for millis() time calculations out
 #include "touch.h"
 #include "Utils.h"
 #include <util/atomic.h>
-
+/*
 static volatile pt solKick;
-static volatile pt ptAlex_test;
 static volatile pt readPos, adcDisp;
-
+*/
 extern uint32_t ipc_comms;
 
 int offset = 0;
@@ -49,11 +48,12 @@ static volatile float V_average;
 static volatile boolean bKick_Again = false;
 
 void touchSetup(void) {
+  /*
   PT_INIT(&readPos); // Touch.ino
   PT_INIT(&adcDisp); // Touch.ino
   PT_SEM_INIT(&semTouch, 1); // Touch.ino
   PT_INIT(&solKick); // Touch.ino
-
+  */
   // Touch.ino setup for code pinmode & ADC
   pinMode(V1, OUTPUT);
   pinMode(V2, OUTPUT);
@@ -95,9 +95,11 @@ void touchSetup(void) {
 }
 
 void RunTouchKickScheduler(void) {
+  /*
   PT_SCHEDULE(threadADCRead(&readPos));
   PT_SCHEDULE(threadDisplay(&adcDisp));
   PT_SCHEDULE(threadKick(&solKick));
+  */
 }
 
 // ADC complete interrupt service routine
@@ -225,11 +227,12 @@ static int threadDisplay(struct pt* disp)
       eDispState = DS_PRINT;
     }
     else if (eDispState == DS_PRINT) {
+      /*
       Serial.print(5);
       Serial.print(",");
       Serial.print(0);
       Serial.print(",");
-      
+      */
       V_value = (5.0/1024)*30*A_pos;
       V_average = (V_datapoints[0] + V_datapoints[1] + V_datapoints[2] + V_datapoints[3]) / 4.0; // Used array to find average between 4 shifting Volt values
 
@@ -247,12 +250,13 @@ static int threadDisplay(struct pt* disp)
       }
     }
     else if (eDispState == DS_PRESENT) {
+      /*
       Serial.print(V_value); // removed offset from the original equation: Serial.println((5.0/1024)*20*A_pos+offset);
       Serial.print(",");
       Serial.print(4.0);
       Serial.print(",");
       Serial.println(V_average);
-
+      */
       PT_SEM_WAIT(disp, &semTouch);
       // Check if event is already sent or "posted", but also check that confirmation is already set to true, then turn off confirmation.
       // Before a new (or updated) event can be posted to Brain, it must first clear the confirmation flag from Brain
@@ -275,11 +279,13 @@ static int threadDisplay(struct pt* disp)
       eDispState = DS_WAIT;
     }
     else if (eDispState == DS_ABSENT) {
+      /*
       Serial.print(0.0);
       Serial.print(",");
       Serial.print(5.0);
       Serial.print(",");
       Serial.println(V_average);
+      */
       PT_SEM_WAIT(disp, &semTouch);
       // Before a new (or updated) event can be posted to Brain, it must first clear the confirmation flag from Brain
       if ( (ipc_comms & MASK_IPC_Touch_To_Brain) && (ipc_comms & MASK_IPC_Brain_Read_Confirmation) ) { // The last event was consumed; solution to above comment
