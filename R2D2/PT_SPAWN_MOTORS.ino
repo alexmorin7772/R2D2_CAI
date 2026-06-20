@@ -1,7 +1,7 @@
 #include "protothreads.h"
 #include "pt-sem.h"
 #include <SparkFun_TB6612.h>
-#include "utils.h"
+#include "Utils.h"
 
 // Pins for all inputs, keep in mind the PWM defines must be on PWM pins
 // the default pins listed are the ones used on the Redbot (ROB-12097) with
