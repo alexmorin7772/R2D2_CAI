@@ -157,13 +157,6 @@ static int threadMotorWorker(struct pt *pt) {
   static float slowspeedconst = 250;
   static float fastspeedfactor;
   static float slowspeedfactor;
-  if ((current_motor_data.action == turn_left) || (current_motor_data.action == turn_right)) {
-    fastspeedfactor = 2;
-    slowspeedfactor = 4;
-  } else {
-    fastspeedfactor = 500/340;
-    slowspeedfactor = 1000/340;
-  }
 
   static float speedconst;
 
@@ -171,6 +164,14 @@ static int threadMotorWorker(struct pt *pt) {
   PT_BEGIN(pt);
 
   for(;;) {
+
+    if ((current_motor_data.action == turn_left) || (current_motor_data.action == turn_right)) {
+      fastspeedfactor = 2;
+      slowspeedfactor = 4;
+    } else {
+      fastspeedfactor = 500/340;
+      slowspeedfactor = 1000/340;
+    }
     // Wait for the Manager to signal "true"
 
     PT_WAIT_UNTIL(pt, bMotor);
