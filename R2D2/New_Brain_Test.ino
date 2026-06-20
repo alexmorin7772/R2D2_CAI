@@ -265,7 +265,7 @@ int check_touch_ipc(struct pt* brain) {
     PT_SEM_WAIT(brain, &sem_ipc);
     if ( Check_Available_Touch_Event() ) {  // New event found from Touch Sensor
       ipc_comms |= MASK_IPC_Brain_Read_Confirmation;  // Confirm the event
-      PORTB &= ~(1 << 5); // Debug LED manipulation matching hardware state
+      //PORTB &= ~(1 << 5); // Debug LED manipulation matching hardware state
 
       if (alert_to_kick) {
         bKick = true;

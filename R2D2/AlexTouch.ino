@@ -14,10 +14,10 @@ C) Using an extra function "getTicksDuration" for millis() time calculations out
 #include "touch.h"
 #include "Utils.h"
 #include <util/atomic.h>
-/*
+
 static volatile pt solKick;
 static volatile pt readPos, adcDisp;
-*/
+
 extern uint32_t ipc_comms;
 
 int offset = 0;
@@ -48,30 +48,28 @@ static volatile float V_average;
 static volatile boolean bKick_Again = false;
 
 void touchSetup(void) {
-  /*
   PT_INIT(&readPos); // Touch.ino
   PT_INIT(&adcDisp); // Touch.ino
   PT_SEM_INIT(&semTouch, 1); // Touch.ino
   PT_INIT(&solKick); // Touch.ino
-  */
   // Touch.ino setup for code pinmode & ADC
   pinMode(V1, OUTPUT);
   pinMode(V2, OUTPUT);
-  pinMode(V_ref_neg, INPUT);
+  //pinMode(V_ref_neg, INPUT);
   pinMode(V_wiper, OUTPUT);
   pinMode(SOLENOID_PIN, OUTPUT);
   digitalWrite(SOLENOID_PIN, LOW);  // Initialize de-energized
-  pinMode(LED_BUILTIN, OUTPUT); // Touch.ino for debug purposes, open to change!
-  digitalWrite(LED_BUILTIN, LOW); // Using LED_BUILTIN from pinmode
+  //pinMode(LED_BUILTIN, OUTPUT); // Touch.ino for debug purposes, open to change!
+  //digitalWrite(LED_BUILTIN, LOW); // Using LED_BUILTIN from pinmode
 
-  pinMode(V_LOW, OUTPUT);
-  digitalWrite(V_LOW, LOW);
+  //pinMode(V_LOW, OUTPUT);
+  //digitalWrite(V_LOW, LOW);
 
   // below are the 4 pinmodes for the impeller
   pinMode(FAN_AIN1, OUTPUT);
   pinMode(FAN_PWM, OUTPUT);
   pinMode(FAN_STBY, OUTPUT);
-  pinMode(LED_BUILTIN, OUTPUT);
+  //pinMode(LED_BUILTIN, OUTPUT);
 
   // Making sure the impeller is off at the start
   digitalWrite(FAN_STBY, LOW);
@@ -90,16 +88,14 @@ void touchSetup(void) {
   sei(); // Enable global interrupts
   
   // Start a new ADC conversion
-  adcStarted = true; // Set the flag
-  ADCSRA |= bit(ADSC); // Start ADC conversion
+  //adcStarted = true; // Set the flag
+  //ADCSRA |= bit(ADSC); // Start ADC conversion
 }
 
 void RunTouchKickScheduler(void) {
-  /*
   PT_SCHEDULE(threadADCRead(&readPos));
   PT_SCHEDULE(threadDisplay(&adcDisp));
   PT_SCHEDULE(threadKick(&solKick));
-  */
 }
 
 // ADC complete interrupt service routine
@@ -129,7 +125,7 @@ void Post_Touch_Event_to_Brain () {
 void readSensorPos(void) {
   digitalWrite(V1, HIGH);
   digitalWrite(V2, LOW);
-  digitalWrite(V_ref_neg, LOW);
+  //digitalWrite(V_ref_neg, LOW);
   digitalWrite(V_wiper, LOW);
   
   delayMicroseconds(3);
@@ -266,7 +262,7 @@ static int threadDisplay(struct pt* disp)
       Post_Touch_Event_to_Brain();
       bPresent = true;
       // digitalWrite(LED_BUILTIN, HIGH); // Touch sending (HGH)
-      PORTB |= (1 << 5);
+      //PORTB |= (1 << 5);
       PT_SEM_SIGNAL(disp,&semTouch);
 
       PT_YIELD(disp);
@@ -333,13 +329,13 @@ static int threadKick(struct pt* sol) // Worker Thread
   {
     PT_WAIT_UNTIL(sol, bKick_Start);
     // digitalWrite(SOLENOID_PIN, HIGH);
-    PORTB |= (1 << 4);
+    //PORTB |= (1 << 4);
 
     prevTime2 = millis();
     // PT_WAIT_WHILE(sol, getTicksDuration(prevTime2, millis()) < 200);
     PT_WAIT_UNTIL(sol, (millis() - prevTime2) >= 200);
     
-    PORTB &= ~(1 << 4);
+    //PORTB &= ~(1 << 4);
     // digitalWrite(SOLENOID_PIN, LOW);
     bKick_Start = false;
   }

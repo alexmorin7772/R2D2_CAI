@@ -106,7 +106,7 @@ volatile unsigned long prevTime4 = 0;
 bool started = false;
 //boolean for the start/stop signal
 
-#define SOLENOID_PIN 12
+#define SOLENOID_PIN A3
 
 //object recognition state machine
 enum object_recognition_state {
@@ -185,7 +185,7 @@ void setup() {
   PT_INIT(&pt_update_motor_data);
   PT_INIT(&ptManager);
   PT_INIT(&ptWorker);
-  //PT_INIT(&pt_touch_and_brain);
+  PT_INIT(&pt_touch_and_brain);
   PT_SEM_INIT(&sem_ball, 1);
   PT_SEM_INIT(&sem_goal, 1);
   PT_SEM_INIT(&sem_line, 1);
@@ -211,10 +211,10 @@ void loop() {
   //PT_SCHEDULE(lens_adjustment(&pt_lens_adjustment));
   PT_SCHEDULE(update_motor_state(&pt_update_motor_state));
   PT_SCHEDULE(update_motor_data(&pt_update_motor_data));
-  //PT_SCHEDULE(threadADCRead(&readPos));
-  //PT_SCHEDULE(threadDisplay(&adcDisp));
-  //PT_SCHEDULE(threadKick(&solKick));
+  PT_SCHEDULE(threadADCRead(&readPos));
+  PT_SCHEDULE(threadDisplay(&adcDisp));
+  PT_SCHEDULE(threadKick(&solKick));
   PT_SCHEDULE(threadMotorWorker(&ptWorker));
   PT_SCHEDULE(threadMotorManager(&ptManager));
-  //PT_SCHEDULE(check_touch_ipc(&pt_touch_and_brain));
+  PT_SCHEDULE(check_touch_ipc(&pt_touch_and_brain));
 }
