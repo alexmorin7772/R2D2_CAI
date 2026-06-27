@@ -26,26 +26,6 @@ const int offsetB = 1;
 Motor motor1 = Motor(AIN1, AIN2, PWMA, offsetA, STBY);
 Motor motor2 = Motor(BIN1, BIN2, PWMB, offsetB, STBY);
 
-// Inter-Process Communication (IPC) variables
-//volatile uint32_t ipc_comms = 0; 
-//static struct pt_sem sem_ipc;      // Protects ipc_comms
-
-// Motor Data Payload
-/*
-enum motor_action {
-  drive_forward,
-  drive_backward, //not sure if we will need this or not
-  turn_left,
-  turn_right,
-  idle
-};
-
-//data the motor uses
-struct motor_data {
-  float object_distance;
-  float turn_angle;
-  motor_action action;
-};*/
 extern motor_state current_motor_state; //set default to search for ball
 extern motor_data current_motor_data; //start by being idle
 
@@ -200,12 +180,6 @@ static int threadMotorWorker(struct pt *pt) {
       speedconst = slowspeedconst;
     }
 
-    TmrStart = millis();
-    TmrDur = 20 * moveTime;
-
-
-    Serial.println(F("begin moving"));
-    
     PT_SEM_WAIT(pt, &sem_ipc);
     if (runMode == drive_forward) {
       forward(motor1, motor2, speedconst / 2);
@@ -216,13 +190,11 @@ static int threadMotorWorker(struct pt *pt) {
       Serial.println(F("I AM MOVING BACKWARD"));
       ipc_comms |= MASK_MOTOR_MOVING;
     } else if (runMode == turn_left){
-      //if (current_motor_state == align_on_ball || current_motor_state == align_on_goal) right(motor1, motor2, speedconst / 8);
-      /*else */right(motor1, motor2, speedconst / 2);
+      right(motor1, motor2, speedconst / 2);
       Serial.println(F("I AM MOVING LEFT"));
       ipc_comms |= MASK_MOTOR_MOVING;
     } else if (runMode == turn_right){
-      //if (current_motor_state == align_on_ball || current_motor_state == align_on_goal) left(motor1, motor2, speedconst / 8);
-      /*else */left(motor1, motor2, speedconst / 2);
+      left(motor1, motor2, speedconst / 2);
       Serial.println(F("I AM MOVING RIGHT"));
       ipc_comms |= MASK_MOTOR_MOVING;
     } else if (runMode == idle){
@@ -235,14 +207,9 @@ static int threadMotorWorker(struct pt *pt) {
     
     PT_SEM_SIGNAL(pt, &sem_ipc);
 
-    Serial.println(F("moving"));
-    Serial.println(TmrDur);
-    Serial.println(digitalRead(AIN1));
-    Serial.println(digitalRead(AIN2));
-    Serial.println(digitalRead(BIN1));
-    Serial.println(digitalRead(BIN2));
-    Serial.println(analogRead(PWMA));
-    Serial.println(analogRead(PWMB));
+    Serial.print(F("Going to move for "));
+    Serial.print(TmrDur);
+    Serial.println(F(" milliseconds."));
 
     PT_SPAWN(pt, &ptTimerSpawn, threadTimer_MotorWait(&ptTimerSpawn));
                                    
@@ -250,7 +217,6 @@ static int threadMotorWorker(struct pt *pt) {
     ipc_comms &= ~MASK_MOTOR_MOVING;
     PT_SEM_SIGNAL(pt, &sem_ipc);
 
-    Serial.println(F("done moving"));
     //Tell ipc comms movement stopped
     bMotor = false;
     //PT_YIELD(pt);
@@ -267,77 +233,10 @@ int threadTimer_MotorWait(struct pt *move)
 
   PT_WAIT_UNTIL(move, (getTicksDuration(TmrStart, millis()) >= TmrDur) || ((ipc_comms & MASK_OVERRIDE_FLAG) && !no_overrides)); // One tick is 1 milliseconds
   //brain needs to send payload then send override so that i am not executing old data
-  Serial.println(millis()-TmrStart);
+  Serial.print(F("Finished moving after "));
+  Serial.print(millis() - TmrStart);
+  Serial.println(F(" milliseconds."));
   PT_EXIT(move);
 
   PT_END(move);
 }
-/*
-unsigned long getTicksDuration(unsigned long prevTicks, unsigned long currTicks) {
-  if (prevTicks > currTicks) {                         // System time overflows (through 0)
-    currTicks += (unsigned long)(-1) - prevTicks + 1;  // Shift current time forward relative to zero reference
-    prevTicks = 0;
-  }
-
-  return (currTicks - prevTicks);  // Now just return the difference
-}
-
-static int threadTestInjector(struct pt *pt) {
-  PT_BEGIN(pt);
-
-  mainState = msInit;
-
-  for(;;) {
-    if (Serial.available()) {
-      char cmd = Serial.read();
-      Serial.println("brain takes control");
-      PT_SEM_WAIT(pt, &sem_motor);
-      PT_SEM_WAIT(pt, &sem_ipc);
-      if (cmd == 'f') { // Test Forward
-        motor_data.object_distance = 340.0;
-        motor_data.turn_angle = 0;
-        motor_data.action = rForward;
-        ipc_comms |= MASK_IPC_Brain_To_Motor;
-        Serial.println("FORWARD command");
-      } else if (cmd == 'r') { // Test Rotate
-        motor_data.turn_angle = 90.0;
-        motor_data.object_distance = 0;
-        motor_data.action = rRotateR;
-        ipc_comms |= MASK_OVERRIDE_FLAG; // You require this to trigger the Manager
-        Serial.println(ipc_comms, HEX);
-        Serial.println("ROTATE command");
-        Serial.println(">>> Injecting OVERRIDE");
-      } else if (cmd == 'b') { //Test Backwards
-        motor_data.object_distance = 340.0;
-        motor_data.turn_angle = 0;
-        motor_data.action = rBackward;
-        ipc_comms |= MASK_IPC_Brain_To_Motor;
-        Serial.println("BACKWARD command");
-      }
-      Serial.println("brain gives up control");
-      PT_SEM_SIGNAL(pt, &sem_ipc);
-      PT_SEM_SIGNAL(pt, &sem_motor);
-    }
-    PT_SLEEP(pt, 10);
-  }
-  PT_END(pt);
-}
-
-void setup() {
-  Serial.begin(115200);
-  PT_INIT(&ptManager);
-  PT_INIT(&ptWorker);
-  //PT_INIT(&ptTestBrain);
-  PT_SEM_INIT(&sem_ipc, 1);
-  PT_SEM_INIT(&sem_motor, 1);
-  //PT_SEM_INIT(&semWorker, 1);
-  pinMode(LED_BUILTIN, OUTPUT);
-  digitalWrite(LED_BUILTIN, LOW);
-}
-
-void loop() {
-  PT_SCHEDULE(threadMotorWorker(&ptWorker));
-  PT_SCHEDULE(threadMotorManager(&ptManager));
-  //PT_SCHEDULE(threadTestInjector(&ptTestBrain));
-}
-*/
