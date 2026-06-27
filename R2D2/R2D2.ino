@@ -211,10 +211,10 @@ void loop() {
   //PT_SCHEDULE(lens_adjustment(&pt_lens_adjustment));
   PT_SCHEDULE(update_motor_state(&pt_update_motor_state));
   PT_SCHEDULE(update_motor_data(&pt_update_motor_data));
-  PT_SCHEDULE(threadADCRead(&readPos));
-  PT_SCHEDULE(threadDisplay(&adcDisp));
-  PT_SCHEDULE(threadKick(&solKick));
+  //PT_SCHEDULE(threadADCRead(&readPos));
+  //PT_SCHEDULE(threadDisplay(&adcDisp));
+  //PT_SCHEDULE(threadKick(&solKick));
   PT_SCHEDULE(threadMotorWorker(&ptWorker));
   PT_SCHEDULE(threadMotorManager(&ptManager));
-  PT_SCHEDULE(check_touch_ipc(&pt_touch_and_brain));
+  //PT_SCHEDULE(check_touch_ipc(&pt_touch_and_brain));
 }
