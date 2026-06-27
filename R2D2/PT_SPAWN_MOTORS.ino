@@ -216,13 +216,13 @@ static int threadMotorWorker(struct pt *pt) {
       Serial.println(F("I AM MOVING BACKWARD"));
       ipc_comms |= MASK_MOTOR_MOVING;
     } else if (runMode == turn_left){
-      if (current_motor_state == align_on_ball || current_motor_state == align_on_goal) right(motor1, motor2, speedconst / 8);
-      else right(motor1, motor2, speedconst / 2);
+      //if (current_motor_state == align_on_ball || current_motor_state == align_on_goal) right(motor1, motor2, speedconst / 8);
+      /*else */right(motor1, motor2, speedconst / 2);
       Serial.println(F("I AM MOVING LEFT"));
       ipc_comms |= MASK_MOTOR_MOVING;
     } else if (runMode == turn_right){
-      if (current_motor_state == align_on_ball || current_motor_state == align_on_goal) left(motor1, motor2, speedconst / 8);
-      else left(motor1, motor2, speedconst / 2);
+      //if (current_motor_state == align_on_ball || current_motor_state == align_on_goal) left(motor1, motor2, speedconst / 8);
+      /*else */left(motor1, motor2, speedconst / 2);
       Serial.println(F("I AM MOVING RIGHT"));
       ipc_comms |= MASK_MOTOR_MOVING;
     } else if (runMode == idle){
